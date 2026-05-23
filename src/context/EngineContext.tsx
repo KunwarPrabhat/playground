@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
+import { useSharedValue, SharedValue } from 'react-native-reanimated';
 import { ElementNode, EngineMode, GridSnap } from '../types/engineTypes';
 
 interface EngineContextType {
@@ -13,6 +14,9 @@ interface EngineContextType {
   addElement: (element: ElementNode) => void;
   updateElement: (id: string, updates: Partial<ElementNode>) => void;
   deleteElement: (id: string) => void;
+  panX: SharedValue<number>;
+  panY: SharedValue<number>;
+  scale: SharedValue<number>;
 }
 
 const EngineContext = createContext<EngineContextType | undefined>(undefined);
@@ -22,6 +26,10 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [elements, setElements] = useState<ElementNode[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [snapSize, setSnapSize] = useState<GridSnap>(16);
+
+  const panX = useSharedValue(0);
+  const panY = useSharedValue(0);
+  const scale = useSharedValue(1);
 
   const addElement = useCallback((element: ElementNode) => {
     setElements((prev) => [...prev, element]);
@@ -52,6 +60,9 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         addElement,
         updateElement,
         deleteElement,
+        panX,
+        panY,
+        scale,
       }}
     >
       {children}

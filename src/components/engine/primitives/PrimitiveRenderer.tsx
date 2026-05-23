@@ -41,6 +41,17 @@ export const PrimitiveRenderer: React.FC<Props> = ({ type, width, height }) => {
     return t.replace(/_/g, ' ').toUpperCase();
   };
 
+  if (type === 'spawner_marker') {
+    return (
+      <View style={[styles.spawnerContainer, { width, height }]}>
+        <View style={styles.spawnerRing} />
+        <View style={styles.spawnerCrosshairH} />
+        <View style={styles.spawnerCrosshairV} />
+        <View style={styles.spawnerCenterDot} />
+      </View>
+    );
+  }
+
   if (type === 'grid') {
     const cellSize = 32;
     const cols = Math.max(1, Math.floor(width / cellSize));
@@ -107,6 +118,40 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
+  },
+  spawnerContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  spawnerRing: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: '#f28482',
+    borderStyle: 'dashed',
+    position: 'absolute',
+  },
+  spawnerCrosshairH: {
+    width: 36,
+    height: 1.5,
+    backgroundColor: '#fff',
+    position: 'absolute',
+    opacity: 0.8,
+  },
+  spawnerCrosshairV: {
+    width: 1.5,
+    height: 36,
+    backgroundColor: '#fff',
+    position: 'absolute',
+    opacity: 0.8,
+  },
+  spawnerCenterDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#f28482',
+    position: 'absolute',
   },
   gridInnerLineVertical: {
     position: 'absolute',

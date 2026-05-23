@@ -13,7 +13,7 @@ const EngineInterface: React.FC = () => {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>Craft2D: Play Mode Simulation</Text>
+          <Text style={styles.title}>Make2D: Sim <Text style={{ fontSize: 12, color: '#aaa' }}>({elements.length} nodes)</Text></Text>
           <TouchableOpacity onPress={() => setMode('edit')} style={styles.modeBtn}>
             <Text style={styles.modeText}>Stop Simulation</Text>
             <Feather name="square" size={16} color="#cb997e" style={{ marginLeft: 6 }} />
@@ -27,7 +27,7 @@ const EngineInterface: React.FC = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Craft2D Engine</Text>
+        <Text style={styles.title}>Make2D <Text style={{ fontSize: 12, color: '#aaa' }}>({elements.length} nodes)</Text></Text>
         <View style={styles.headerActions}>
           <TouchableOpacity onPress={() => setShowLibrary(!showLibrary)} style={styles.modeBtn}>
             <Feather name="box" size={16} color="#fff" />
@@ -116,18 +116,19 @@ const styles = StyleSheet.create({
   },
   floatingSidebar: {
     position: 'absolute',
-    top: 16,
-    left: 16,
-    bottom: 16,
-    borderRadius: 12,
+    bottom: 24,
+    left: 24,
+    right: 24,
+    borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: 'rgba(30,30,30,0.9)',
+    backgroundColor: 'rgba(30,30,30,0.85)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
-    elevation: 5,
+    elevation: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    zIndex: 100,
   },
 });

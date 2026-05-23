@@ -1,10 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import { withSpring } from 'react-native-reanimated';
 import { PrimitiveType, GridSnap } from '../../types/engineTypes';
 import { useEngine } from '../../context/EngineContext';
 import { PrimitiveRenderer } from './primitives/PrimitiveRenderer';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 
 const PRIMITIVES: PrimitiveType[] = [
   'grid',
@@ -15,18 +17,64 @@ const PRIMITIVES: PrimitiveType[] = [
   'loop_block',
   'game_start',
   'game_end',
+  'spawner_marker',
 ];
 
+const getIcon = (type: PrimitiveType) => {
+  const size = 24;
+  const color = '#ddbea9';
+  switch (type) {
+    case 'grid':
+      return <Feather name="grid" size={size} color={color} />;
+    case 'input_block':
+      return <MaterialCommunityIcons name="keyboard-outline" size={size} color={color} />;
+    case 'deadblock':
+      return <Feather name="slash" size={size} color={color} />;
+    case 'flowflow':
+      return <Feather name="git-branch" size={size} color={color} />;
+    case 'if_else_block':
+      return <MaterialCommunityIcons name="call-split" size={size} color={color} />;
+    case 'loop_block':
+      return <Feather name="repeat" size={size} color={color} />;
+    case 'game_start':
+      return <Feather name="play-circle" size={size} color={color} />;
+    case 'game_end':
+      return <Feather name="stop-circle" size={size} color={color} />;
+    case 'spawner_marker':
+      return <MaterialCommunityIcons name="target" size={size} color="#f28482" />;
+    default:
+      return <Feather name="help-circle" size={size} color={color} />;
+  }
+};
+
 export const SidebarLibrary: React.FC = () => {
-  const { addElement, snapSize, setSnapSize } = useEngine();
+  const { addElement, elements, setElements, panX, panY, scale } = useEngine();
+  const [activeName, setActiveName] = React.useState<string | null>(null);
 
   const handleAdd = (type: PrimitiveType) => {
-    const w = type === 'grid' ? 96 : 64;
-    const h = type === 'grid' ? 96 : 64;
-    // Spawns centered relative to the panned viewport (assuming no panning yet)
-    // Offset because canvas starts at -SCREEN_W * 2, -SCREEN_H * 2
-    const x = SCREEN_W * 2 + SCREEN_W / 2 - w / 2;
-    const y = SCREEN_H * 2 + SCREEN_H / 2 - h / 2;
+    // 40px grid aligned sizes
+    const w = type === 'grid' ? 160 : (type === 'spawner_marker' ? 40 : 80);
+    const h = type === 'grid' ? 160 : (type === 'spawner_marker' ? 40 : 80);
+    
+    // Blender style: Find active spawner_marker element on canvas
+    const spawner = elements.find((el) => el.type === 'spawner_marker');
+    
+    // Compute current screen center in canvas-space (adding base 2x offset)
+    let x = SCREEN_W * 2 + (SCREEN_W / 2 - panX.value) / scale.value - w / 2;
+    let y = SCREEN_H * 2 + (SCREEN_H / 2 - panY.value) / scale.value - h / 2;
+
+    if (spawner) {
+      x = spawner.x + spawner.w / 2 - w / 2;
+      y = spawner.y + spawner.h / 2 - h / 2;
+    }
+
+    // Magnetically snap the initial spawn location to 40px grid
+    x = Math.round(x / 40) * 40;
+    y = Math.round(y / 40) * 40;
+
+    console.log("[Make2D Engine] SPAWNING ELEMENT:", type, { x, y, w, h, panX: panX.value, panY: panY.value, scale: scale.value });
+
+    setActiveName(type.replace(/_/g, ' ').toUpperCase());
 
     addElement({
       id: Math.random().toString(36).substring(7),
@@ -38,96 +86,126 @@ export const SidebarLibrary: React.FC = () => {
     });
   };
 
-  const snaps: GridSnap[] = ['off', 8, 16, 32];
+  const handleReset = () => {
+    panX.value = 0;
+    panY.value = 0;
+    scale.value = 1;
+
+    // Reset spawner marker back to center of screen if present
+    setElements((prev) =>
+      prev.map((el) => {
+        if (el.type === 'spawner_marker') {
+          const sx = Math.round((SCREEN_W * 2.5 - 20) / 40) * 40;
+          const sy = Math.round((SCREEN_H * 2.5 - 20) / 40) * 40;
+          return { ...el, x: sx, y: sy };
+        }
+        return el;
+      })
+    );
+  };
 
   return (
-    <View style={styles.sidebar}>
-      <Text style={styles.header}>Library</Text>
-      
-      <View style={styles.snapConfig}>
-        <Text style={styles.snapLabel}>Snap:</Text>
-        <View style={styles.snapRow}>
-          {snaps.map((s) => (
-            <TouchableOpacity
-              key={s.toString()}
-              style={[styles.snapBtn, snapSize === s && styles.snapBtnActive]}
-              onPress={() => setSnapSize(s)}
-            >
-              <Text style={[styles.snapBtnText, snapSize === s && styles.snapBtnTextActive]}>
-                {s}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+    <View style={styles.dock}>
+      <View style={styles.dockHeader}>
+        <Text style={styles.headerTitle}>Make2D Library</Text>
+        <TouchableOpacity style={styles.resetBtn} onPress={handleReset}>
+          <MaterialCommunityIcons name="cached" size={14} color="#ddbea9" style={{ marginRight: 4 }} />
+          <Text style={styles.resetBtnText}>RESET</Text>
+        </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll}>
+      <View style={styles.activeTagContainer}>
+        <Text style={styles.activeTagText}>
+          {activeName ? `[ ${activeName} ]` : '[ SELECT BLOCK ]'}
+        </Text>
+      </View>
+
+      <View style={styles.iconGrid}>
         {PRIMITIVES.map((prim) => (
-          <TouchableOpacity key={prim} onPress={() => handleAdd(prim)} style={styles.itemWrapper}>
-            <View pointerEvents="none">
-              <PrimitiveRenderer type={prim} width={80} height={40} />
-            </View>
+          <TouchableOpacity
+            key={prim}
+            onPress={() => handleAdd(prim)}
+            onPressIn={() => setActiveName(prim.replace(/_/g, ' ').toUpperCase())}
+            style={styles.iconButton}
+          >
+            {getIcon(prim)}
           </TouchableOpacity>
         ))}
-      </ScrollView>
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  sidebar: {
-    width: 120,
-    backgroundColor: 'transparent',
-    paddingVertical: 16,
+  dock: {
+    width: '100%',
+    padding: 12,
     alignItems: 'center',
-    flex: 1,
+    alignSelf: 'stretch',
   },
-  header: {
+  dockHeader: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  headerTitle: {
     color: '#ddbea9',
     fontWeight: 'bold',
-    fontSize: 16,
-    marginBottom: 16,
+    fontSize: 14,
   },
-  snapConfig: {
-    width: '100%',
+  resetBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 8,
-    marginBottom: 20,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: 'rgba(221, 190, 169, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(221, 190, 169, 0.2)',
+  },
+  resetBtnText: {
+    color: '#ddbea9',
+    fontSize: 9,
+    fontWeight: 'bold',
+  },
+  activeTagContainer: {
+    backgroundColor: 'rgba(221, 190, 169, 0.1)',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(221, 190, 169, 0.2)',
+    width: '100%',
     alignItems: 'center',
   },
-  snapLabel: {
-    color: '#fff',
-    fontSize: 10,
-    marginBottom: 4,
+  activeTagText: {
+    color: '#ddbea9',
+    fontSize: 9,
+    fontWeight: 'bold',
+    letterSpacing: 0.8,
   },
-  snapRow: {
+  iconGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    gap: 4,
-  },
-  snapBtn: {
-    paddingHorizontal: 6,
-    paddingVertical: 4,
-    borderRadius: 4,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-  },
-  snapBtnActive: {
-    backgroundColor: '#cb997e',
-  },
-  snapBtnText: {
-    color: '#aaa',
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
-  snapBtnTextActive: {
-    color: '#fff',
-  },
-  scroll: {
-    paddingBottom: 40,
-    alignItems: 'center',
     gap: 12,
+    maxWidth: 270, // Fits 5 on top and 4 on bottom perfectly!
   },
-  itemWrapper: {
-    marginBottom: 12,
-  }
+  iconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
 });

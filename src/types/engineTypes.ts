@@ -1,3 +1,5 @@
+import { SharedValue } from 'react-native-reanimated';
+
 export type PrimitiveType =
   | 'grid'
   | 'input_block'
@@ -6,7 +8,8 @@ export type PrimitiveType =
   | 'if_else_block'
   | 'loop_block'
   | 'game_start'
-  | 'game_end';
+  | 'game_end'
+  | 'spawner_marker';
 
 export type GridSnap = 'off' | 8 | 16 | 32;
 

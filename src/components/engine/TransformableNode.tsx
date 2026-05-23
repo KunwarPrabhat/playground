@@ -18,7 +18,7 @@ interface Props {
 const HANDLE_SIZE = 20;
 
 export const TransformableNode: React.FC<Props> = ({ element }) => {
-  const { snapSize, updateElement, selectedId, setSelectedId } = useEngine();
+  const { updateElement, selectedId, setSelectedId } = useEngine();
 
   const isSelected = selectedId === element.id;
 
@@ -39,36 +39,34 @@ export const TransformableNode: React.FC<Props> = ({ element }) => {
     updateElement(element.id, { x, y, w, h });
   };
 
-  const getSnapped = (val: number) => {
-    'worklet';
-    if (snapSize === 'off') return val;
-    return Math.round(val / snapSize) * snapSize;
-  };
-
   const panGesture = Gesture.Pan()
     .onUpdate((e) => {
-      translateX.value = element.x + e.translationX;
-      translateY.value = element.y + e.translationY;
+      const rawX = element.x + e.translationX;
+      const rawY = element.y + e.translationY;
+      translateX.value = Math.round(rawX / 40) * 40;
+      translateY.value = Math.round(rawY / 40) * 40;
     })
     .onEnd(() => {
-      const snappedX = getSnapped(translateX.value);
-      const snappedY = getSnapped(translateY.value);
-      translateX.value = withSpring(snappedX, { damping: 15, stiffness: 120 });
-      translateY.value = withSpring(snappedY, { damping: 15, stiffness: 120 });
-      runOnJS(commitChanges)(snappedX, snappedY, width.value, height.value);
+      const sx = translateX.value;
+      const sy = translateY.value;
+      translateX.value = withSpring(sx, { damping: 15, stiffness: 120 });
+      translateY.value = withSpring(sy, { damping: 15, stiffness: 120 });
+      runOnJS(commitChanges)(sx, sy, width.value, height.value);
     });
 
   const resizeGesture = Gesture.Pan()
     .onUpdate((e) => {
-      width.value = Math.max(32, element.w + e.translationX);
-      height.value = Math.max(32, element.h + e.translationY);
+      const rawW = element.w + e.translationX;
+      const rawH = element.h + e.translationY;
+      width.value = Math.max(40, Math.round(rawW / 40) * 40);
+      height.value = Math.max(40, Math.round(rawH / 40) * 40);
     })
     .onEnd(() => {
-      const snappedW = Math.max(32, getSnapped(width.value));
-      const snappedH = Math.max(32, getSnapped(height.value));
-      width.value = withSpring(snappedW, { damping: 15, stiffness: 120 });
-      height.value = withSpring(snappedH, { damping: 15, stiffness: 120 });
-      runOnJS(commitChanges)(translateX.value, translateY.value, snappedW, snappedH);
+      const sw = width.value;
+      const sh = height.value;
+      width.value = withSpring(sw, { damping: 15, stiffness: 120 });
+      height.value = withSpring(sh, { damping: 15, stiffness: 120 });
+      runOnJS(commitChanges)(translateX.value, translateY.value, sw, sh);
     });
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -107,6 +105,8 @@ export const TransformableNode: React.FC<Props> = ({ element }) => {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
+    top: 0,
+    left: 0,
   },
   selectionBorder: {
     ...StyleSheet.absoluteFillObject,
