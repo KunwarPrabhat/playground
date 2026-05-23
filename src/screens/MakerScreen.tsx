@@ -1,131 +1,107 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
-import { SudokuCreator } from '../components/games/sudoku/SudokuCreator';
-import { AdaptiveMazeBuilder } from '../components/games/maze/AdaptiveMazeBuilder';
-import Svg, { Path, Rect } from 'react-native-svg';
+import React from 'react';
+import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { EngineProvider, useEngine } from '../context/EngineContext';
+import { SidebarLibrary } from '../components/engine/SidebarLibrary';
+import { CanvasWorkspace } from '../components/engine/CanvasWorkspace';
+import { Feather } from '@expo/vector-icons';
 
-export const MakerScreen = () => {
-  const [selectedCreator, setSelectedCreator] = useState<'maze' | 'sudoku' | null>(null);
+const EngineInterface: React.FC = () => {
+  const { mode, setMode, elements, selectedId, deleteElement } = useEngine();
 
-  if (selectedCreator === 'maze') {
-    return <AdaptiveMazeBuilder onBack={() => setSelectedCreator(null)} />;
-  }
-
-  if (selectedCreator === 'sudoku') {
-    return <SudokuCreator onBack={() => setSelectedCreator(null)} />;
+  if (mode === 'play') {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Craft2D: Play Mode Simulation</Text>
+          <TouchableOpacity onPress={() => setMode('edit')} style={styles.modeBtn}>
+            <Text style={styles.modeText}>Stop Simulation</Text>
+            <Feather name="square" size={16} color="#cb997e" style={{ marginLeft: 6 }} />
+          </TouchableOpacity>
+        </View>
+        <CanvasWorkspace />
+      </View>
+    );
   }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.headerTitle}>Select Game Creator</Text>
-      
-      <TouchableOpacity style={styles.card} onPress={() => setSelectedCreator('maze')}>
-        <View style={styles.iconWrapper}>
-          <Svg width={32} height={32} viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={2}>
-            <Path d="M3 3h18v18H3z" />
-            <Path d="M9 3v12M15 9v12M3 9h12M9 15h12" />
-          </Svg>
+      <View style={styles.header}>
+        <Text style={styles.title}>Craft2D Engine</Text>
+        <View style={styles.headerActions}>
+          {selectedId && (
+            <TouchableOpacity onPress={() => deleteElement(selectedId)} style={styles.deleteBtn}>
+              <Feather name="trash-2" size={16} color="#fff" />
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity onPress={() => setMode('play')} style={styles.modeBtn}>
+            <Text style={styles.modeText}>Test Simulation</Text>
+            <Feather name="play" size={16} color="#71a071" style={{ marginLeft: 6 }} />
+          </TouchableOpacity>
         </View>
-        <View style={styles.cardContent}>
-          <Text style={styles.cardTitle}>Create Maze</Text>
-          <Text style={styles.cardSub}>Design custom math mazes with dynamic grids & interactive path steps.</Text>
-        </View>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.card} onPress={() => setSelectedCreator('sudoku')}>
-        <View style={styles.iconWrapperSudoku}>
-          <Svg width={32} height={32} viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={2}>
-            <Rect x={3} y={3} width={18} height={18} rx={2} />
-            <Path d="M9 3v18M15 3v18M3 9h18M3 15h18" />
-          </Svg>
-        </View>
-        <View style={styles.cardContent}>
-          <Text style={styles.cardTitle}>Create Sudoku</Text>
-          <Text style={styles.cardSub}>Assemble modular sudoku puzzles with variable difficulty seeds.</Text>
-        </View>
-      </TouchableOpacity>
+      </View>
+      <View style={styles.workspace}>
+        <SidebarLibrary />
+        <CanvasWorkspace />
+      </View>
     </View>
+  );
+};
+
+export const MakerScreen = () => {
+  return (
+    <EngineProvider>
+      <EngineInterface />
+    </EngineProvider>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#c2c5aa',
-    paddingHorizontal: 20,
-    paddingTop: 80,
+    backgroundColor: '#1d201e',
+    paddingTop: 45,
   },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#1d201e',
-    marginBottom: 28,
-    textAlign: 'center',
-  },
-  card: {
-    backgroundColor: '#a68a64',
-    borderRadius: 40,
-    padding: 20,
+  header: {
+    height: 60,
+    backgroundColor: 'rgba(30, 30, 30, 0.95)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.1)',
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
-    borderWidth: 1.5,
-    borderColor: '#a68a64',
-    elevation: 4,
-  },
-  iconWrapper: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
-    backgroundColor: '#ffc251',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  iconWrapperSudoku: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
-    backgroundColor: '#657885',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  cardContent: {
-    flex: 1,
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#373d2bff',
-    marginBottom: 6,
-  },
-  cardSub: {
-    fontSize: 12,
-    color: '#414833',
-    lineHeight: 16,
-  },
-  backBtn: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#2d312e',
-    paddingVertical: 8,
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
-    borderRadius: 10,
-    marginBottom: 20,
-  },
-  backText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
   },
   title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1d201e',
-    marginTop: 10,
+    color: '#ddbea9',
+    fontWeight: '900',
+    fontSize: 18,
+    letterSpacing: 1.2,
   },
-  subText: {
-    fontSize: 14,
-    color: '#474f44',
-    marginTop: 6,
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  modeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  modeText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 12,
+  },
+  deleteBtn: {
+    backgroundColor: '#cb4f4f',
+    padding: 8,
+    borderRadius: 8,
+  },
+  workspace: {
+    flex: 1,
+    flexDirection: 'row',
   },
 });
