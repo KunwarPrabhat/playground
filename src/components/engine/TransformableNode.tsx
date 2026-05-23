@@ -40,6 +40,7 @@ export const TransformableNode: React.FC<Props> = ({ element }) => {
   };
 
   const getSnapped = (val: number) => {
+    'worklet';
     if (snapSize === 'off') return val;
     return Math.round(val / snapSize) * snapSize;
   };

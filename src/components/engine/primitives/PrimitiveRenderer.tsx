@@ -41,6 +41,46 @@ export const PrimitiveRenderer: React.FC<Props> = ({ type, width, height }) => {
     return t.replace(/_/g, ' ').toUpperCase();
   };
 
+  if (type === 'grid') {
+    const cellSize = 32;
+    const cols = Math.max(1, Math.floor(width / cellSize));
+    const rows = Math.max(1, Math.floor(height / cellSize));
+
+    return (
+      <View
+        style={[
+          styles.container,
+          {
+            width,
+            height,
+            backgroundColor: getBackgroundColor(),
+            borderColor: getBorderColor(),
+            borderWidth: 2,
+            padding: 2,
+            flexDirection: 'column',
+          },
+        ]}
+      >
+        {Array.from({ length: rows }).map((_, r) => (
+          <View key={r} style={{ flexDirection: 'row', flex: 1 }}>
+            {Array.from({ length: cols }).map((_, c) => (
+              <View
+                key={c}
+                style={{
+                  flex: 1,
+                  borderWidth: 1,
+                  borderColor: 'rgba(255, 255, 255, 0.15)',
+                  margin: 1,
+                  borderRadius: 2,
+                }}
+              />
+            ))}
+          </View>
+        ))}
+      </View>
+    );
+  }
+
   return (
     <View
       style={[
@@ -67,6 +107,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
+  },
+  gridInnerLineVertical: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: '50%',
+    width: 1,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+  gridInnerLineHorizontal: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: '50%',
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.2)',
   },
   title: {
     color: '#fff',

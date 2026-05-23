@@ -1,8 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import { PrimitiveType, GridSnap } from '../../types/engineTypes';
 import { useEngine } from '../../context/EngineContext';
 import { PrimitiveRenderer } from './primitives/PrimitiveRenderer';
+
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
 const PRIMITIVES: PrimitiveType[] = [
   'grid',
@@ -19,13 +21,20 @@ export const SidebarLibrary: React.FC = () => {
   const { addElement, snapSize, setSnapSize } = useEngine();
 
   const handleAdd = (type: PrimitiveType) => {
+    const w = type === 'grid' ? 96 : 64;
+    const h = type === 'grid' ? 96 : 64;
+    // Spawns centered relative to the panned viewport (assuming no panning yet)
+    // Offset because canvas starts at -SCREEN_W * 2, -SCREEN_H * 2
+    const x = SCREEN_W * 2 + SCREEN_W / 2 - w / 2;
+    const y = SCREEN_H * 2 + SCREEN_H / 2 - h / 2;
+
     addElement({
       id: Math.random().toString(36).substring(7),
       type,
-      x: 100,
-      y: 100,
-      w: 64,
-      h: 64,
+      x,
+      y,
+      w,
+      h,
     });
   };
 
@@ -68,11 +77,10 @@ export const SidebarLibrary: React.FC = () => {
 const styles = StyleSheet.create({
   sidebar: {
     width: 120,
-    backgroundColor: 'rgba(30, 30, 30, 0.65)',
-    borderRightWidth: 1,
-    borderRightColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'transparent',
     paddingVertical: 16,
     alignItems: 'center',
+    flex: 1,
   },
   header: {
     color: '#ddbea9',

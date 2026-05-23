@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { EngineProvider, useEngine } from '../context/EngineContext';
 import { SidebarLibrary } from '../components/engine/SidebarLibrary';
@@ -7,6 +7,7 @@ import { Feather } from '@expo/vector-icons';
 
 const EngineInterface: React.FC = () => {
   const { mode, setMode, elements, selectedId, deleteElement } = useEngine();
+  const [showLibrary, setShowLibrary] = useState(false);
 
   if (mode === 'play') {
     return (
@@ -28,6 +29,10 @@ const EngineInterface: React.FC = () => {
       <View style={styles.header}>
         <Text style={styles.title}>Craft2D Engine</Text>
         <View style={styles.headerActions}>
+          <TouchableOpacity onPress={() => setShowLibrary(!showLibrary)} style={styles.modeBtn}>
+            <Feather name="box" size={16} color="#fff" />
+            <Text style={[styles.modeText, { marginLeft: 6 }]}>Library</Text>
+          </TouchableOpacity>
           {selectedId && (
             <TouchableOpacity onPress={() => deleteElement(selectedId)} style={styles.deleteBtn}>
               <Feather name="trash-2" size={16} color="#fff" />
@@ -40,8 +45,12 @@ const EngineInterface: React.FC = () => {
         </View>
       </View>
       <View style={styles.workspace}>
-        <SidebarLibrary />
         <CanvasWorkspace />
+        {showLibrary && (
+          <View style={styles.floatingSidebar}>
+            <SidebarLibrary />
+          </View>
+        )}
       </View>
     </View>
   );
@@ -70,6 +79,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
+    zIndex: 10,
   },
   title: {
     color: '#ddbea9',
@@ -102,6 +112,22 @@ const styles = StyleSheet.create({
   },
   workspace: {
     flex: 1,
-    flexDirection: 'row',
+    position: 'relative',
+  },
+  floatingSidebar: {
+    position: 'absolute',
+    top: 16,
+    left: 16,
+    bottom: 16,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(30,30,30,0.9)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
   },
 });
