@@ -11,12 +11,10 @@ import Svg, { Defs, Pattern, Circle, Line, Rect } from 'react-native-svg';
 
 export const CanvasWorkspace: React.FC = () => {
   const { elements, selectedId, setSelectedId, panX, panY, scale } = useEngine();
-  
+
   console.log("[Make2D Engine] CANVAS ELEMENTS COUNT:", elements.length, elements);
-  
-  const lastPanX = useSharedValue(0);
-  const lastPanY = useSharedValue(0);
-  const lastScale = useSharedValue(1);
+
+
 
   const isPinching = useSharedValue(false);
   const pinchStartScale = useSharedValue(1);
@@ -26,15 +24,10 @@ export const CanvasWorkspace: React.FC = () => {
   const pinchStartFocalY = useSharedValue(0);
 
   const canvasPanGesture = Gesture.Pan()
-    .onUpdate((e) => {
+    .onChange((e) => {
       if (isPinching.value) return;
-      panX.value = lastPanX.value + e.translationX;
-      panY.value = lastPanY.value + e.translationY;
-    })
-    .onEnd(() => {
-      if (isPinching.value) return;
-      lastPanX.value = panX.value;
-      lastPanY.value = panY.value;
+      panX.value += e.changeX;
+      panY.value += e.changeY;
     });
 
   const canvasPinchGesture = Gesture.Pinch()
@@ -57,9 +50,6 @@ export const CanvasWorkspace: React.FC = () => {
     })
     .onEnd(() => {
       isPinching.value = false;
-      lastScale.value = scale.value;
-      lastPanX.value = panX.value;
-      lastPanY.value = panY.value;
     });
 
   const combinedGesture = Gesture.Simultaneous(canvasPanGesture, canvasPinchGesture);
@@ -87,17 +77,7 @@ export const CanvasWorkspace: React.FC = () => {
 
   const [coords, setCoords] = React.useState({ x: 0, y: 0, s: 100 });
 
-  useAnimatedReaction(
-    () => ({ px: panX.value, py: panY.value, sc: scale.value }),
-    (current) => {
-      // Sync local gesture tracking values when reset view animates to (0,0,1)
-      if (current.px === 0 && current.py === 0 && current.sc === 1) {
-        lastPanX.value = 0;
-        lastPanY.value = 0;
-        lastScale.value = 1;
-      }
-    }
-  );
+
 
   useAnimatedReaction(
     () => ({
@@ -132,7 +112,7 @@ export const CanvasWorkspace: React.FC = () => {
           <View style={styles.axisXLine} />
           <View style={styles.axisXArrow} />
           <Text style={[styles.axisText, { color: '#f28482', top: 22, left: 34 }]}>X</Text>
-          
+
           {/* Origin Point */}
           <View style={styles.axisOrigin} />
         </View>
@@ -149,7 +129,14 @@ export const CanvasWorkspace: React.FC = () => {
         <Animated.View style={[styles.gridLayer, gridAnimatedStyle]}>
           <Svg width="100%" height="100%">
             <Defs>
-              <Pattern id="bgGrid" width="40" height="40" patternUnits="userSpaceOnUse">
+              <Pattern 
+                id="bgGrid" 
+                width="40" 
+                height="40" 
+                patternUnits="userSpaceOnUse"
+                x={-(SCREEN_W * 1.5)}
+                y={-(SCREEN_H * 1.5)}
+              >
                 <Circle cx="0" cy="0" r="1.5" fill="rgba(113, 160, 113, 0.4)" />
                 <Line x1="0" y1="0" x2="40" y2="0" stroke="rgba(255, 255, 255, 0.02)" strokeWidth="1" />
                 <Line x1="0" y1="0" x2="0" y2="40" stroke="rgba(255, 255, 255, 0.02)" strokeWidth="1" />
