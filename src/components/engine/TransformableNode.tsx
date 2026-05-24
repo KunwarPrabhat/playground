@@ -18,7 +18,7 @@ interface Props {
 const HANDLE_SIZE = 20;
 
 export const TransformableNode: React.FC<Props> = ({ element }) => {
-  const { updateElement, selectedId, setSelectedId } = useEngine();
+  const { updateElement, moveElementTree, selectedId, setSelectedId } = useEngine();
 
   const isSelected = selectedId === element.id;
 
@@ -49,9 +49,11 @@ export const TransformableNode: React.FC<Props> = ({ element }) => {
     .onEnd(() => {
       const sx = translateX.value;
       const sy = translateY.value;
+      const dx = sx - element.x;
+      const dy = sy - element.y;
       translateX.value = withSpring(sx, { damping: 15, stiffness: 120 });
       translateY.value = withSpring(sy, { damping: 15, stiffness: 120 });
-      runOnJS(commitChanges)(sx, sy, width.value, height.value);
+      runOnJS(moveElementTree)(element.id, dx, dy);
     });
 
   const resizeGesture = Gesture.Pan()

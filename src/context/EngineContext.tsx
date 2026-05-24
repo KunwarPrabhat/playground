@@ -11,8 +11,9 @@ interface EngineContextType {
   setSelectedId: (id: string | null) => void;
   snapSize: GridSnap;
   setSnapSize: (snap: GridSnap) => void;
-  addElement: (element: ElementNode) => void;
+  addElement: (element: Omit<ElementNode, 'name' | 'id'> & { id?: string }) => void;
   updateElement: (id: string, updates: Partial<ElementNode>) => void;
+  moveElementTree: (id: string, dx: number, dy: number) => void;
   deleteElement: (id: string) => void;
   panX: SharedValue<number>;
   panY: SharedValue<number>;
@@ -31,14 +32,44 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const panY = useSharedValue(0);
   const scale = useSharedValue(1);
 
-  const addElement = useCallback((element: ElementNode) => {
-    setElements((prev) => [...prev, element]);
+  const addElement = useCallback((element: Omit<ElementNode, 'name' | 'id'> & { id?: string }) => {
+    setElements((prev) => {
+      let count = prev.filter(e => e.type === element.type).length + 1;
+      let defaultName = `${element.type}_${count}`;
+      while (prev.some(e => e.id === defaultName)) {
+        count++;
+        defaultName = `${element.type}_${count}`;
+      }
+      return [...prev, { ...element, id: defaultName, name: defaultName, parentId: null, targetId: null } as ElementNode];
+    });
   }, []);
 
   const updateElement = useCallback((id: string, updates: Partial<ElementNode>) => {
     setElements((prev) =>
       prev.map((el) => (el.id === id ? { ...el, ...updates } : el))
     );
+  }, []);
+
+  const moveElementTree = useCallback((id: string, dx: number, dy: number) => {
+    setElements((prev) => {
+      const descendants = new Set<string>();
+      const queue = [id];
+      while (queue.length > 0) {
+        const curr = queue.shift()!;
+        descendants.add(curr);
+        for (const el of prev) {
+          if (el.parentId === curr && !descendants.has(el.id)) {
+            queue.push(el.id);
+          }
+        }
+      }
+      return prev.map((el) => {
+        if (descendants.has(el.id)) {
+          return { ...el, x: el.x + dx, y: el.y + dy };
+        }
+        return el;
+      });
+    });
   }, []);
 
   const deleteElement = useCallback((id: string) => {
@@ -59,6 +90,7 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setSnapSize,
         addElement,
         updateElement,
+        moveElementTree,
         deleteElement,
         panX,
         panY,

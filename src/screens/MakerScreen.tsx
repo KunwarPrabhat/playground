@@ -3,11 +3,13 @@ import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { EngineProvider, useEngine } from '../context/EngineContext';
 import { SidebarLibrary } from '../components/engine/SidebarLibrary';
 import { CanvasWorkspace } from '../components/engine/CanvasWorkspace';
+import { HierarchyPanel } from '../components/engine/HierarchyPanel';
 import { Feather } from '@expo/vector-icons';
 
 const EngineInterface: React.FC = () => {
   const { mode, setMode, elements, selectedId, deleteElement } = useEngine();
   const [showLibrary, setShowLibrary] = useState(false);
+  const [showHierarchy, setShowHierarchy] = useState(false);
 
   if (mode === 'play') {
     return (
@@ -33,9 +35,11 @@ const EngineInterface: React.FC = () => {
               <Feather name="trash-2" size={16} color="#fff" />
             </TouchableOpacity>
           )}
+          <TouchableOpacity onPress={() => setShowHierarchy(!showHierarchy)} style={styles.modeBtn}>
+            <Feather name="list" size={16} color="#fff" />
+          </TouchableOpacity>
           <TouchableOpacity onPress={() => setShowLibrary(!showLibrary)} style={styles.modeBtn}>
             <Feather name="box" size={16} color="#fff" />
-            <Text style={[styles.modeText, { marginLeft: 6 }]}>Library</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setMode('play')} style={styles.modeBtn}>
             <Feather name="play" size={16} color="#71a071" />
@@ -43,6 +47,7 @@ const EngineInterface: React.FC = () => {
         </View>
       </View>
       <View style={styles.workspace}>
+        <HierarchyPanel isVisible={showHierarchy} />
         <CanvasWorkspace />
         {showLibrary && (
           <View style={styles.floatingSidebar}>
