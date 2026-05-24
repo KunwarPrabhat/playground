@@ -13,10 +13,9 @@ const EngineInterface: React.FC = () => {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>Make2D: Sim <Text style={{ fontSize: 12, color: '#aaa' }}>({elements.length} nodes)</Text></Text>
+          <Text style={styles.title}>Make2D: Sim</Text>
           <TouchableOpacity onPress={() => setMode('edit')} style={styles.modeBtn}>
-            <Text style={styles.modeText}>Stop Simulation</Text>
-            <Feather name="square" size={16} color="#cb997e" style={{ marginLeft: 6 }} />
+            <Feather name="square" size={16} color="#cb997e" />
           </TouchableOpacity>
         </View>
         <CanvasWorkspace />
@@ -27,20 +26,19 @@ const EngineInterface: React.FC = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Make2D <Text style={{ fontSize: 12, color: '#aaa' }}>({elements.length} nodes)</Text></Text>
+        <Text style={styles.title}>Make2D</Text>
         <View style={styles.headerActions}>
-          <TouchableOpacity onPress={() => setShowLibrary(!showLibrary)} style={styles.modeBtn}>
-            <Feather name="box" size={16} color="#fff" />
-            <Text style={[styles.modeText, { marginLeft: 6 }]}>Library</Text>
-          </TouchableOpacity>
           {selectedId && (
             <TouchableOpacity onPress={() => deleteElement(selectedId)} style={styles.deleteBtn}>
               <Feather name="trash-2" size={16} color="#fff" />
             </TouchableOpacity>
           )}
+          <TouchableOpacity onPress={() => setShowLibrary(!showLibrary)} style={styles.modeBtn}>
+            <Feather name="box" size={16} color="#fff" />
+            <Text style={[styles.modeText, { marginLeft: 6 }]}>Library</Text>
+          </TouchableOpacity>
           <TouchableOpacity onPress={() => setMode('play')} style={styles.modeBtn}>
-            <Text style={styles.modeText}>Test Simulation</Text>
-            <Feather name="play" size={16} color="#71a071" style={{ marginLeft: 6 }} />
+            <Feather name="play" size={16} color="#71a071" />
           </TouchableOpacity>
         </View>
       </View>
