@@ -46,13 +46,13 @@ export const LogicNodeUI: React.FC<Props> = ({ node }) => {
     console.log("[LogicNodeUI] handleConnectWire target drop coordinates in canvas-space:", dX, dY);
     for (const targetNode of nodes) {
       if (targetNode.id === node.id) continue;
-      
+
       const pinX = targetNode.x;
-      const pinY = targetNode.y + 55;
+      const pinY = targetNode.y + (targetNode.height ? targetNode.height / 2 : 55);
       const dist = Math.hypot(pinX - dX, pinY - dY);
-      
+
       console.log(`[LogicNodeUI] Checking target node: ${targetNode.id} at pinX:${pinX}, pinY:${pinY}. Distance is ${dist}`);
-      
+
       if (dist < 120) { // Even larger snapping tolerance for easy finger gestures!
         console.log(`[LogicNodeUI] Snapped successfully to node ${targetNode.id}! Creating wire.`);
         addWire({
@@ -65,27 +65,29 @@ export const LogicNodeUI: React.FC<Props> = ({ node }) => {
     }
   };
 
+  const nodeCenterY = node.height ? node.height / 2 : 55;
+
   const wirePanGesture = Gesture.Pan()
     .onStart(() => {
       runOnJS(setDraftWire)({
         startX: node.x + 180,
-        startY: node.y + 55,
+        startY: node.y + nodeCenterY,
         endX: node.x + 180,
-        endY: node.y + 55
+        endY: node.y + nodeCenterY
       });
     })
     .onUpdate((e) => {
       runOnJS(setDraftWire)({
         startX: node.x + 180,
-        startY: node.y + 55,
+        startY: node.y + nodeCenterY,
         endX: node.x + 180 + e.translationX / scale.value,
-        endY: node.y + 55 + e.translationY / scale.value
+        endY: node.y + nodeCenterY + e.translationY / scale.value
       });
     })
     .onEnd((e) => {
       const dropX = node.x + 180 + e.translationX / scale.value;
       const dropY = node.y + 55 + e.translationY / scale.value;
-      
+
       runOnJS(setDraftWire)(null);
       runOnJS(handleConnectWire)(dropX, dropY);
     });
@@ -112,6 +114,13 @@ export const LogicNodeUI: React.FC<Props> = ({ node }) => {
 
   const formatTitle = (t: string) => t.replace(/_/g, ' ').toUpperCase();
 
+  const handleLayout = (e: any) => {
+    const { height } = e.nativeEvent.layout;
+    if (!node.height || Math.abs(node.height - height) > 1) {
+      updateLogicNode(node.id, { height });
+    }
+  };
+
   const getColors = () => {
     switch (node.type) {
       case 'on_interact': return { bg: 'rgba(203, 153, 126, 0.8)', border: '#cb997e' };
@@ -126,7 +135,7 @@ export const LogicNodeUI: React.FC<Props> = ({ node }) => {
   const colors = getColors();
 
   return (
-    <Animated.View style={[styles.container, animatedStyle, { zIndex: isSelected ? 100 : 1 }]}>
+    <Animated.View onLayout={handleLayout} style={[styles.container, animatedStyle, { zIndex: isSelected ? 100 : 1 }]}>
       <GestureDetector gesture={nodePanGesture}>
         <View style={[styles.block, { backgroundColor: colors.bg, borderColor: isSelected ? '#fff' : colors.border }]}>
           {/* Pins on the middle borders */}
@@ -136,8 +145,8 @@ export const LogicNodeUI: React.FC<Props> = ({ node }) => {
           </GestureDetector>
 
           {/* Premium Glowing Absolute-Positioned Delete Button on Top Right Intersection */}
-          <TouchableOpacity 
-            onPress={() => deleteLogicNode(node.id)} 
+          <TouchableOpacity
+            onPress={() => deleteLogicNode(node.id)}
             style={styles.deleteNodeBtn}
             activeOpacity={0.7}
           >
@@ -208,7 +217,7 @@ export const LogicNodeUI: React.FC<Props> = ({ node }) => {
         <View style={styles.pickerOverlay}>
           <Text style={styles.pickerTitle}>Select Option</Text>
           <ScrollView style={styles.pickerList} nestedScrollEnabled>
-            
+
             {showPicker === 'targetSceneId' && elements.map((el) => (
               <TouchableOpacity key={el.id} style={styles.pickerOption} onPress={() => handleSelectPicker(el.id)}>
                 <Text style={styles.pickerOptionName}>{el.name}</Text>

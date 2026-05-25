@@ -8,6 +8,7 @@ export interface LogicNode {
   targetSceneId: string | null;
   x: number;
   y: number;
+  height?: number; 
   props?: Record<string, any>;
 }
 
@@ -15,7 +16,7 @@ export interface Wire {
   id: string;
   fromNodeId: string;
   toNodeId: string;
-  fromPinId?: string; // Optional for multi-pin support like True/False
+  fromPinId?: string; 
 }
 
 interface BlueprintContextType {

@@ -1,15 +1,37 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableWithoutFeedback, Dimensions } from 'react-native';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring, runOnJS, useAnimatedReaction } from 'react-native-reanimated';
+import { View, StyleSheet, TouchableWithoutFeedback, Dimensions } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, useAnimatedProps } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Svg, { Defs, Pattern, Circle, Line, Rect, Path, G } from 'react-native-svg';
+import Svg, { Defs, Pattern, Circle, Line, Rect, Path } from 'react-native-svg';
 import { useBlueprint } from '../../context/BlueprintContext';
 import { LogicNodeUI } from './LogicNodeUI';
-import { useAnimatedProps } from 'react-native-reanimated';
 
-const AnimatedG = Animated.createAnimatedComponent(G);
+const AnimatedPath = Animated.createAnimatedComponent(Path);
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+
+const WireConnection = ({ sx, sy, ex, ey, panX, panY, scale }: any) => {
+  const animatedProps = useAnimatedProps(() => {
+    const w25 = SCREEN_W * 2.5;
+    const w05 = SCREEN_W * 0.5;
+    const h25 = SCREEN_H * 2.5;
+    const h05 = SCREEN_H * 0.5;
+
+    const screenSx = (sx - w25) * scale.value + w05 + panX.value;
+    const screenSy = (sy - h25) * scale.value + h05 + panY.value;
+    const screenEx = (ex - w25) * scale.value + w05 + panX.value;
+    const screenEy = (ey - h25) * scale.value + h05 + panY.value;
+
+    const distanceX = Math.abs(screenEx - screenSx);
+    const offset = Math.max(80 * scale.value, distanceX * 0.4);
+
+    return {
+      d: `M ${screenSx} ${screenSy} C ${screenSx + offset} ${screenSy}, ${screenEx - offset} ${screenEy}, ${screenEx} ${screenEy}`
+    };
+  });
+
+  return <AnimatedPath animatedProps={animatedProps} stroke="#cb997e" strokeWidth={4} fill="none" />;
+};
 
 export const BlueprintWorkspace: React.FC = () => {
   const { nodes, wires, draftWire, selectedNodeId, setSelectedNodeId, panX, panY, scale } = useBlueprint();
@@ -65,8 +87,6 @@ export const BlueprintWorkspace: React.FC = () => {
     ],
   }));
 
-
-
   const gridAnimatedStyle = useAnimatedStyle(() => {
     const size = 40 * scale.value;
     const tx = (panX.value % size);
@@ -86,26 +106,9 @@ export const BlueprintWorkspace: React.FC = () => {
     }
   };
 
-  const renderWirePath = (startX: number, startY: number, endX: number, endY: number, key: string) => {
-    // Dynamic offset for smooth S-curves
-    const distanceX = Math.abs(endX - startX);
-    const offset = Math.max(80, distanceX * 0.4); 
-
-    const pathData = `M ${startX} ${startY} C ${startX + offset} ${startY}, ${endX - offset} ${endY}, ${endX} ${endY}`;
-
-    return (
-      <Path
-        key={key}
-        d={pathData}
-        stroke="#cb997e"
-        strokeWidth={4} // Slightly thicker
-        fill="none"
-      />
-    );
-  };
-
   return (
     <View style={styles.viewport}>
+      {/* 1. The Blueprint Grid Layer */}
       <View style={styles.gridContainer} pointerEvents="none">
         <Animated.View style={[styles.gridLayer, gridAnimatedStyle]}>
           <Svg width="100%" height="100%">
@@ -128,6 +131,7 @@ export const BlueprintWorkspace: React.FC = () => {
         </Animated.View>
       </View>
 
+      {/* 2. The Interactive Nodes Layer */}
       <GestureDetector gesture={combinedGesture}>
         <View style={StyleSheet.absoluteFill}>
           <Animated.View style={[styles.canvasLayer, canvasAnimatedStyle]}>
@@ -144,34 +148,35 @@ export const BlueprintWorkspace: React.FC = () => {
         </View>
       </GestureDetector>
 
-      {/* Screen-sized SVG container wrapped in canvasAnimatedStyle to keep performance high and prevent 250MB bitmap crashes */}
-      <Animated.View style={[StyleSheet.absoluteFillObject, canvasAnimatedStyle]} pointerEvents="none">
+      {/* 3. The New GPU-Accelerated Wires Layer */}
+      <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
         <Svg width="100%" height="100%">
           {wires.map(wire => {
             const fromNode = nodes.find(n => n.id === wire.fromNodeId);
             const toNode = nodes.find(n => n.id === wire.toNodeId);
             if (!fromNode || !toNode) return null;
 
-            // Offset by SCREEN_W * 2 / SCREEN_H * 2 to translate canvas-space coordinates to viewport-relative screen-space coordinates
-            const sx = fromNode.x - SCREEN_W * 2 + 180; 
-            const sy = fromNode.y - SCREEN_H * 2 + 55;  
-            const ex = toNode.x - SCREEN_W * 2;         
-            const ey = toNode.y - SCREEN_H * 2 + 55;    
+            const sx = fromNode.x + 180;
+            const sy = fromNode.y + (fromNode.height ? fromNode.height / 2 : 55);
+            const ex = toNode.x;
+            const ey = toNode.y + (toNode.height ? toNode.height / 2 : 55);
 
-            if (isNaN(sx) || isNaN(sy) || isNaN(ex) || isNaN(ey)) return null;
-
-            return renderWirePath(sx, sy, ex, ey, wire.id);
+            return <WireConnection key={wire.id} sx={sx} sy={sy} ex={ex} ey={ey} panX={panX} panY={panY} scale={scale} />;
           })}
-          {draftWire && !isNaN(draftWire.startX) && !isNaN(draftWire.endX) && 
-            renderWirePath(
-              draftWire.startX - SCREEN_W * 2, 
-              draftWire.startY - SCREEN_H * 2, 
-              draftWire.endX - SCREEN_W * 2, 
-              draftWire.endY - SCREEN_H * 2, 
-              'draft'
-            )}
+          {draftWire && !isNaN(draftWire.startX) && !isNaN(draftWire.endX) && (
+            <WireConnection
+              key="draft"
+              sx={draftWire.startX}
+              sy={draftWire.startY}
+              ex={draftWire.endX}
+              ey={draftWire.endY}
+              panX={panX}
+              panY={panY}
+              scale={scale}
+            />
+          )}
         </Svg>
-      </Animated.View>
+      </View>
     </View>
   );
 };
@@ -180,7 +185,7 @@ const styles = StyleSheet.create({
   viewport: {
     flex: 1,
     overflow: 'hidden',
-    backgroundColor: '#12141a', // slightly bluish dark for blueprint
+    backgroundColor: '#12141a',
   },
   gridContainer: {
     position: 'absolute',
