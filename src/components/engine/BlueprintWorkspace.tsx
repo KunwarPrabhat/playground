@@ -50,13 +50,8 @@ export const BlueprintWorkspace: React.FC = () => {
   const pinchStartFocalY = useSharedValue(0);
 
   const canvasPanGesture = Gesture.Pan()
+    .maxPointers(1) 
     .onChange((e) => {
-      if (isPinching.value) return;
-      if (e.numberOfPointers !== 1) return;
-      if (blockPanNextFrame.value) {
-        blockPanNextFrame.value = false;
-        return;
-      }
       panX.value += e.changeX;
       panY.value += e.changeY;
     });

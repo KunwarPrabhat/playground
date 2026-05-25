@@ -25,19 +25,8 @@ export const CanvasWorkspace: React.FC = () => {
   const pinchStartFocalY = useSharedValue(0);
 
   const canvasPanGesture = Gesture.Pan()
+    .maxPointers(1) 
     .onChange((e) => {
-      // 1. Do not pan if currently pinching
-      if (isPinching.value) return;
-
-      // 2. Prevent the massive jump when a 2nd finger touches down
-      if (e.numberOfPointers !== 1) return; 
-
-      // 3. Prevent the massive jump when a finger is released after a pinch
-      if (blockPanNextFrame.value) {
-        blockPanNextFrame.value = false; // Consume the shield flag
-        return; // Skip updating panX/panY for this specific frame
-      }
-
       panX.value += e.changeX;
       panY.value += e.changeY;
     });

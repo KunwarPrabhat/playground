@@ -24,7 +24,13 @@ export const LogicNodeUI: React.FC<Props> = ({ node }) => {
   React.useEffect(() => {
     translateX.value = node.x;
     translateY.value = node.y;
-  }, [node, translateX, translateY]);
+    
+    if (activeDragId.value === node.id) {
+      activeDragId.value = null;
+      activeDragDeltaX.value = 0;
+      activeDragDeltaY.value = 0;
+    }
+  }, [node.x, node.y]);
 
   const commitChanges = (x: number, y: number) => {
     updateLogicNode(node.id, { x, y });
@@ -33,7 +39,6 @@ export const LogicNodeUI: React.FC<Props> = ({ node }) => {
   const nodePanGesture = Gesture.Pan()
     .onStart(() => {
       runOnJS(setSelectedNodeId)(node.id);
-      // Track the start of the drag
       activeDragId.value = node.id;
       activeDragDeltaX.value = 0;
       activeDragDeltaY.value = 0;
@@ -42,15 +47,10 @@ export const LogicNodeUI: React.FC<Props> = ({ node }) => {
       translateX.value += e.changeX / scale.value;
       translateY.value += e.changeY / scale.value;
       
-      // Calculate and broadcast the real-time difference from the saved state
       activeDragDeltaX.value = translateX.value - node.x;
       activeDragDeltaY.value = translateY.value - node.y;
     })
     .onEnd(() => {
-      // Clear the drag state
-      activeDragId.value = null;
-      activeDragDeltaX.value = 0;
-      activeDragDeltaY.value = 0;
       runOnJS(updateLogicNode)(node.id, { x: translateX.value, y: translateY.value });
     }
   );
@@ -66,7 +66,7 @@ export const LogicNodeUI: React.FC<Props> = ({ node }) => {
 
       console.log(`[LogicNodeUI] Checking target node: ${targetNode.id} at pinX:${pinX}, pinY:${pinY}. Distance is ${dist}`);
 
-      if (dist < 120) { // Even larger snapping tolerance for easy finger gestures!
+      if (dist < 120) {
         console.log(`[LogicNodeUI] Snapped successfully to node ${targetNode.id}! Creating wire.`);
         addWire({
           id: Math.random().toString(36).substring(7),
