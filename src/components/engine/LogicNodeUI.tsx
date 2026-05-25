@@ -24,7 +24,7 @@ export const LogicNodeUI: React.FC<Props> = ({ node }) => {
   React.useEffect(() => {
     translateX.value = node.x;
     translateY.value = node.y;
-    
+
     if (activeDragId.value === node.id) {
       activeDragId.value = null;
       activeDragDeltaX.value = 0;
@@ -46,14 +46,14 @@ export const LogicNodeUI: React.FC<Props> = ({ node }) => {
     .onChange((e) => {
       translateX.value += e.changeX / scale.value;
       translateY.value += e.changeY / scale.value;
-      
+
       activeDragDeltaX.value = translateX.value - node.x;
       activeDragDeltaY.value = translateY.value - node.y;
     })
     .onEnd(() => {
       runOnJS(updateLogicNode)(node.id, { x: translateX.value, y: translateY.value });
     }
-  );
+    );
 
   const handleConnectWire = (dX: number, dY: number) => {
     console.log("[LogicNodeUI] handleConnectWire target drop coordinates in canvas-space:", dX, dY);
@@ -150,14 +150,17 @@ export const LogicNodeUI: React.FC<Props> = ({ node }) => {
   return (
     <Animated.View onLayout={handleLayout} style={[styles.container, animatedStyle, { zIndex: isSelected ? 100 : 1 }]}>
       <GestureDetector gesture={nodePanGesture}>
-        <View style={[styles.block, { backgroundColor: colors.bg, borderColor: isSelected ? '#fff' : colors.border }]}>
-          {/* Pins on the middle borders */}
-          <View style={[styles.pin, styles.pinLeft]} />
-          <GestureDetector gesture={wirePanGesture}>
-            <View style={[styles.pin, styles.pinRight]} hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }} />
-          </GestureDetector>
 
-          {/* Premium Glowing Absolute-Positioned Delete Button on Top Right Intersection */}
+        <View style={[styles.block, { backgroundColor: colors.bg, borderColor: isSelected ? '#fff' : colors.border }]}>
+          <View style={[StyleSheet.absoluteFillObject, { justifyContent: 'center', pointerEvents: 'none' }]}>
+            <View style={[styles.pin, { left: -6 }]} />
+          </View>
+          <View style={[StyleSheet.absoluteFillObject, { justifyContent: 'center' }]} pointerEvents="box-none">
+            <GestureDetector gesture={wirePanGesture}>
+              <View style={[styles.pin, { right: -6 }]} hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }} />
+            </GestureDetector>
+          </View>
+
           <TouchableOpacity
             onPress={() => deleteLogicNode(node.id)}
             style={styles.deleteNodeBtn}
@@ -303,14 +306,12 @@ const styles = StyleSheet.create({
   },
   pin: {
     position: 'absolute',
-    top: '50%',
     width: 12,
     height: 12,
     borderRadius: 6,
     backgroundColor: '#fff',
     borderWidth: 2,
     borderColor: '#333',
-    marginTop: -6,
   },
   pinLeft: {
     left: -6,

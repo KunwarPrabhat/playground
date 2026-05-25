@@ -48,10 +48,13 @@ export const BlueprintWorkspace: React.FC = () => {
   const pinchStartPanY = useSharedValue(0);
   const pinchStartFocalX = useSharedValue(0);
   const pinchStartFocalY = useSharedValue(0);
+  const lastSafeFocalX = useSharedValue(0);
+  const lastSafeFocalY = useSharedValue(0);
 
   const canvasPanGesture = Gesture.Pan()
-    .maxPointers(1) 
+    .maxPointers(1)
     .onChange((e) => {
+      if (isPinching.value) return;
       panX.value += e.changeX;
       panY.value += e.changeY;
     });
@@ -64,17 +67,27 @@ export const BlueprintWorkspace: React.FC = () => {
       pinchStartPanY.value = panY.value;
       pinchStartFocalX.value = e.focalX;
       pinchStartFocalY.value = e.focalY;
+
+      lastSafeFocalX.value = e.focalX;
+      lastSafeFocalY.value = e.focalY;
     })
     .onUpdate((e) => {
+      const jumpDist = Math.hypot(e.focalX - lastSafeFocalX.value, e.focalY - lastSafeFocalY.value);
+
+      if (jumpDist > 50) return;
+
+      lastSafeFocalX.value = e.focalX;
+      lastSafeFocalY.value = e.focalY;
+
       const newScale = Math.max(0.5, Math.min(3, pinchStartScale.value * e.scale));
       scale.value = newScale;
       const k = newScale / pinchStartScale.value;
-      panX.value = e.focalX - SCREEN_W / 2 - (pinchStartFocalX.value - SCREEN_W / 2 - pinchStartPanX.value) * k;
-      panY.value = e.focalY - SCREEN_H / 2 - (pinchStartFocalY.value - SCREEN_H / 2 - pinchStartPanY.value) * k;
+
+      panX.value = lastSafeFocalX.value - SCREEN_W / 2 - (pinchStartFocalX.value - SCREEN_W / 2 - pinchStartPanX.value) * k;
+      panY.value = lastSafeFocalY.value - SCREEN_H / 2 - (pinchStartFocalY.value - SCREEN_H / 2 - pinchStartPanY.value) * k;
     })
     .onEnd(() => {
       isPinching.value = false;
-      blockPanNextFrame.value = true;
     });
 
   const combinedGesture = Gesture.Simultaneous(canvasPanGesture, canvasPinchGesture);
@@ -159,16 +172,16 @@ export const BlueprintWorkspace: React.FC = () => {
             const ey = toNode.y + (toNode.height ? toNode.height / 2 : 55);
 
             return (
-              <WireConnection 
-                key={wire.id} 
+              <WireConnection
+                key={wire.id}
                 fromId={fromNode.id}
                 toId={toNode.id}
-                baseSx={sx} 
-                baseSy={sy} 
-                baseEx={ex} 
-                baseEy={ey} 
-                panX={panX} 
-                panY={panY} 
+                baseSx={sx}
+                baseSy={sy}
+                baseEx={ex}
+                baseEy={ey}
+                panX={panX}
+                panY={panY}
                 scale={scale}
                 activeDragId={activeDragId}
                 activeDragDeltaX={activeDragDeltaX}

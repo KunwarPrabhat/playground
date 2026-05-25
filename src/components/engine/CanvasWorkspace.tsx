@@ -17,16 +17,19 @@ export const CanvasWorkspace: React.FC = () => {
 
 
   const isPinching = useSharedValue(false);
-  const blockPanNextFrame = useSharedValue(false); // <-- ADD THIS
+  const blockPanNextFrame = useSharedValue(false); 
   const pinchStartScale = useSharedValue(1);
   const pinchStartPanX = useSharedValue(0);
   const pinchStartPanY = useSharedValue(0);
   const pinchStartFocalX = useSharedValue(0);
   const pinchStartFocalY = useSharedValue(0);
-
-  const canvasPanGesture = Gesture.Pan()
-    .maxPointers(1) 
+  const lastSafeFocalX = useSharedValue(0);
+  const lastSafeFocalY = useSharedValue(0);
+  
+ const canvasPanGesture = Gesture.Pan()
+    .maxPointers(1)
     .onChange((e) => {
+      if (isPinching.value) return;
       panX.value += e.changeX;
       panY.value += e.changeY;
     });
@@ -39,19 +42,27 @@ export const CanvasWorkspace: React.FC = () => {
       pinchStartPanY.value = panY.value;
       pinchStartFocalX.value = e.focalX;
       pinchStartFocalY.value = e.focalY;
+
+      lastSafeFocalX.value = e.focalX;
+      lastSafeFocalY.value = e.focalY;
     })
     .onUpdate((e) => {
+      const jumpDist = Math.hypot(e.focalX - lastSafeFocalX.value, e.focalY - lastSafeFocalY.value);
+
+      if (jumpDist > 50) return;
+
+      lastSafeFocalX.value = e.focalX;
+      lastSafeFocalY.value = e.focalY;
+
       const newScale = Math.max(0.5, Math.min(3, pinchStartScale.value * e.scale));
       scale.value = newScale;
-
       const k = newScale / pinchStartScale.value;
-      // High-fidelity screen-offset focal point tracking
-      panX.value = e.focalX - SCREEN_W / 2 - (pinchStartFocalX.value - SCREEN_W / 2 - pinchStartPanX.value) * k;
-      panY.value = e.focalY - SCREEN_H / 2 - (pinchStartFocalY.value - SCREEN_H / 2 - pinchStartPanY.value) * k;
+
+      panX.value = lastSafeFocalX.value - SCREEN_W / 2 - (pinchStartFocalX.value - SCREEN_W / 2 - pinchStartPanX.value) * k;
+      panY.value = lastSafeFocalY.value - SCREEN_H / 2 - (pinchStartFocalY.value - SCREEN_H / 2 - pinchStartPanY.value) * k;
     })
     .onEnd(() => {
       isPinching.value = false;
-      blockPanNextFrame.value = true; // Shield the Pan gesture from the lift-off jump
     });
 
   const combinedGesture = Gesture.Simultaneous(canvasPanGesture, canvasPinchGesture);
