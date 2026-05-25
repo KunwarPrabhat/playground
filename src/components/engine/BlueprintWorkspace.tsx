@@ -10,17 +10,22 @@ const AnimatedPath = Animated.createAnimatedComponent(Path);
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
-const WireConnection = ({ sx, sy, ex, ey, panX, panY, scale }: any) => {
+const WireConnection = ({ fromId, toId, baseSx, baseSy, baseEx, baseEy, panX, panY, scale, activeDragId, activeDragDeltaX, activeDragDeltaY }: any) => {
   const animatedProps = useAnimatedProps(() => {
+    const currentSx = baseSx + (activeDragId.value === fromId ? activeDragDeltaX.value : 0);
+    const currentSy = baseSy + (activeDragId.value === fromId ? activeDragDeltaY.value : 0);
+    const currentEx = baseEx + (activeDragId.value === toId ? activeDragDeltaX.value : 0);
+    const currentEy = baseEy + (activeDragId.value === toId ? activeDragDeltaY.value : 0);
+
     const w25 = SCREEN_W * 2.5;
     const w05 = SCREEN_W * 0.5;
     const h25 = SCREEN_H * 2.5;
     const h05 = SCREEN_H * 0.5;
 
-    const screenSx = (sx - w25) * scale.value + w05 + panX.value;
-    const screenSy = (sy - h25) * scale.value + h05 + panY.value;
-    const screenEx = (ex - w25) * scale.value + w05 + panX.value;
-    const screenEy = (ey - h25) * scale.value + h05 + panY.value;
+    const screenSx = (currentSx - w25) * scale.value + w05 + panX.value;
+    const screenSy = (currentSy - h25) * scale.value + h05 + panY.value;
+    const screenEx = (currentEx - w25) * scale.value + w05 + panX.value;
+    const screenEy = (currentEy - h25) * scale.value + h05 + panY.value;
 
     const distanceX = Math.abs(screenEx - screenSx);
     const offset = Math.max(80 * scale.value, distanceX * 0.4);
@@ -34,7 +39,7 @@ const WireConnection = ({ sx, sy, ex, ey, panX, panY, scale }: any) => {
 };
 
 export const BlueprintWorkspace: React.FC = () => {
-  const { nodes, wires, draftWire, selectedNodeId, setSelectedNodeId, panX, panY, scale } = useBlueprint();
+  const { nodes, wires, draftWire, selectedNodeId, setSelectedNodeId, panX, panY, scale, activeDragId, activeDragDeltaX, activeDragDeltaY } = useBlueprint();
 
   const isPinching = useSharedValue(false);
   const blockPanNextFrame = useSharedValue(false);
@@ -108,7 +113,6 @@ export const BlueprintWorkspace: React.FC = () => {
 
   return (
     <View style={styles.viewport}>
-      {/* 1. The Blueprint Grid Layer */}
       <View style={styles.gridContainer} pointerEvents="none">
         <Animated.View style={[styles.gridLayer, gridAnimatedStyle]}>
           <Svg width="100%" height="100%">
@@ -131,7 +135,6 @@ export const BlueprintWorkspace: React.FC = () => {
         </Animated.View>
       </View>
 
-      {/* 2. The Interactive Nodes Layer */}
       <GestureDetector gesture={combinedGesture}>
         <View style={StyleSheet.absoluteFill}>
           <Animated.View style={[styles.canvasLayer, canvasAnimatedStyle]}>
@@ -148,7 +151,6 @@ export const BlueprintWorkspace: React.FC = () => {
         </View>
       </GestureDetector>
 
-      {/* 3. The New GPU-Accelerated Wires Layer */}
       <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
         <Svg width="100%" height="100%">
           {wires.map(wire => {
@@ -161,18 +163,39 @@ export const BlueprintWorkspace: React.FC = () => {
             const ex = toNode.x;
             const ey = toNode.y + (toNode.height ? toNode.height / 2 : 55);
 
-            return <WireConnection key={wire.id} sx={sx} sy={sy} ex={ex} ey={ey} panX={panX} panY={panY} scale={scale} />;
+            return (
+              <WireConnection 
+                key={wire.id} 
+                fromId={fromNode.id}
+                toId={toNode.id}
+                baseSx={sx} 
+                baseSy={sy} 
+                baseEx={ex} 
+                baseEy={ey} 
+                panX={panX} 
+                panY={panY} 
+                scale={scale}
+                activeDragId={activeDragId}
+                activeDragDeltaX={activeDragDeltaX}
+                activeDragDeltaY={activeDragDeltaY}
+              />
+            );
           })}
           {draftWire && !isNaN(draftWire.startX) && !isNaN(draftWire.endX) && (
             <WireConnection
               key="draft"
-              sx={draftWire.startX}
-              sy={draftWire.startY}
-              ex={draftWire.endX}
-              ey={draftWire.endY}
+              fromId="draft_start"
+              toId="draft_end"
+              baseSx={draftWire.startX}
+              baseSy={draftWire.startY}
+              baseEx={draftWire.endX}
+              baseEy={draftWire.endY}
               panX={panX}
               panY={panY}
               scale={scale}
+              activeDragId={activeDragId}
+              activeDragDeltaX={activeDragDeltaX}
+              activeDragDeltaY={activeDragDeltaY}
             />
           )}
         </Svg>

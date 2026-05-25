@@ -16,7 +16,7 @@ export interface Wire {
   id: string;
   fromNodeId: string;
   toNodeId: string;
-  fromPinId?: string; 
+  fromPinId?: string;
 }
 
 interface BlueprintContextType {
@@ -36,6 +36,10 @@ interface BlueprintContextType {
   draftWire: { startX: number; startY: number; endX: number; endY: number } | null;
   setDraftWire: (wire: { startX: number; startY: number; endX: number; endY: number } | null) => void;
   deleteLogicNode: (id: string) => void;
+
+  activeDragId: SharedValue<string | null>;
+  activeDragDeltaX: SharedValue<number>;
+  activeDragDeltaY: SharedValue<number>;
 }
 
 const BlueprintContext = createContext<BlueprintContextType | undefined>(undefined);
@@ -49,6 +53,10 @@ export const BlueprintProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const panX = useSharedValue(0);
   const panY = useSharedValue(0);
   const scale = useSharedValue(1);
+
+  const activeDragId = useSharedValue<string | null>(null);
+  const activeDragDeltaX = useSharedValue(0);
+  const activeDragDeltaY = useSharedValue(0);
 
   const addLogicNode = useCallback((node: LogicNode) => {
     setNodes((prev) => [...prev, node]);
@@ -96,7 +104,10 @@ export const BlueprintProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         setSelectedNodeId,
         draftWire,
         setDraftWire,
-        deleteLogicNode
+        deleteLogicNode,
+        activeDragId,
+        activeDragDeltaX,
+        activeDragDeltaY
       }}
     >
       {children}

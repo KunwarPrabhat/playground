@@ -12,7 +12,7 @@ interface Props {
 }
 
 export const LogicNodeUI: React.FC<Props> = ({ node }) => {
-  const { nodes, addWire, updateLogicNode, updateLogicNodeTarget, selectedNodeId, setSelectedNodeId, scale, setDraftWire, deleteLogicNode } = useBlueprint();
+  const { nodes, addWire, updateLogicNode, updateLogicNodeTarget, selectedNodeId, setSelectedNodeId, scale, setDraftWire, deleteLogicNode, activeDragId, activeDragDeltaX, activeDragDeltaY } = useBlueprint();
   const { elements, globalVariables } = useEngine();
   const [showPicker, setShowPicker] = useState<string | false>(false);
 
@@ -33,14 +33,27 @@ export const LogicNodeUI: React.FC<Props> = ({ node }) => {
   const nodePanGesture = Gesture.Pan()
     .onStart(() => {
       runOnJS(setSelectedNodeId)(node.id);
+      // Track the start of the drag
+      activeDragId.value = node.id;
+      activeDragDeltaX.value = 0;
+      activeDragDeltaY.value = 0;
     })
     .onChange((e) => {
       translateX.value += e.changeX / scale.value;
       translateY.value += e.changeY / scale.value;
+      
+      // Calculate and broadcast the real-time difference from the saved state
+      activeDragDeltaX.value = translateX.value - node.x;
+      activeDragDeltaY.value = translateY.value - node.y;
     })
     .onEnd(() => {
+      // Clear the drag state
+      activeDragId.value = null;
+      activeDragDeltaX.value = 0;
+      activeDragDeltaY.value = 0;
       runOnJS(updateLogicNode)(node.id, { x: translateX.value, y: translateY.value });
-    });
+    }
+  );
 
   const handleConnectWire = (dX: number, dY: number) => {
     console.log("[LogicNodeUI] handleConnectWire target drop coordinates in canvas-space:", dX, dY);
