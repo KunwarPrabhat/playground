@@ -4,12 +4,15 @@ import { EngineProvider, useEngine } from '../context/EngineContext';
 import { SidebarLibrary } from '../components/engine/SidebarLibrary';
 import { CanvasWorkspace } from '../components/engine/CanvasWorkspace';
 import { HierarchyPanel } from '../components/engine/HierarchyPanel';
+import { BlueprintWorkspace } from '../components/engine/BlueprintWorkspace';
+import { BlueprintProvider } from '../context/BlueprintContext';
 import { Feather } from '@expo/vector-icons';
 
 const EngineInterface: React.FC = () => {
   const { mode, setMode, elements, selectedId, deleteElement } = useEngine();
   const [showLibrary, setShowLibrary] = useState(false);
   const [showHierarchy, setShowHierarchy] = useState(false);
+  const [activeTab, setActiveTab] = useState<'scene' | 'blueprint'>('scene');
 
   if (mode === 'play') {
     return (
@@ -28,16 +31,31 @@ const EngineInterface: React.FC = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Make2D</Text>
+        <View style={styles.tabToggle}>
+          <TouchableOpacity
+            style={[styles.tabBtn, activeTab === 'scene' && styles.tabBtnActive]}
+            onPress={() => setActiveTab('scene')}
+          >
+            <Text style={[styles.tabText, activeTab === 'scene' && styles.tabTextActive]}>Scene</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tabBtn, activeTab === 'blueprint' && styles.tabBtnActive]}
+            onPress={() => setActiveTab('blueprint')}
+          >
+            <Text style={[styles.tabText, activeTab === 'blueprint' && styles.tabTextActive]}>Blueprint</Text>
+          </TouchableOpacity>
+        </View>
         <View style={styles.headerActions}>
           {selectedId && (
             <TouchableOpacity onPress={() => deleteElement(selectedId)} style={styles.deleteBtn}>
               <Feather name="trash-2" size={16} color="#fff" />
             </TouchableOpacity>
           )}
-          <TouchableOpacity onPress={() => setShowHierarchy(!showHierarchy)} style={styles.modeBtn}>
-            <Feather name="list" size={16} color="#fff" />
-          </TouchableOpacity>
+          {activeTab === 'scene' && (
+            <TouchableOpacity onPress={() => setShowHierarchy(!showHierarchy)} style={styles.modeBtn}>
+              <Feather name="list" size={16} color="#fff" />
+            </TouchableOpacity>
+          )}
           <TouchableOpacity onPress={() => setShowLibrary(!showLibrary)} style={styles.modeBtn}>
             <Feather name="box" size={16} color="#fff" />
           </TouchableOpacity>
@@ -47,11 +65,22 @@ const EngineInterface: React.FC = () => {
         </View>
       </View>
       <View style={styles.workspace}>
-        <HierarchyPanel isVisible={showHierarchy} />
-        <CanvasWorkspace />
+        <View 
+          style={[StyleSheet.absoluteFill, { opacity: activeTab === 'scene' ? 1 : 0, zIndex: activeTab === 'scene' ? 1 : 0 }]} 
+          pointerEvents={activeTab === 'scene' ? 'auto' : 'none'}
+        >
+          <HierarchyPanel isVisible={showHierarchy} />
+          <CanvasWorkspace />
+        </View>
+        <View 
+          style={[StyleSheet.absoluteFill, { opacity: activeTab === 'blueprint' ? 1 : 0, zIndex: activeTab === 'blueprint' ? 1 : 0 }]} 
+          pointerEvents={activeTab === 'blueprint' ? 'auto' : 'none'}
+        >
+          <BlueprintWorkspace />
+        </View>
         {showLibrary && (
           <View style={styles.floatingSidebar}>
-            <SidebarLibrary />
+            <SidebarLibrary mode={activeTab} />
           </View>
         )}
       </View>
@@ -62,7 +91,9 @@ const EngineInterface: React.FC = () => {
 export const MakerScreen = () => {
   return (
     <EngineProvider>
-      <EngineInterface />
+      <BlueprintProvider>
+        <EngineInterface />
+      </BlueprintProvider>
     </EngineProvider>
   );
 };
@@ -83,6 +114,28 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     zIndex: 10,
+  },
+  tabToggle: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    borderRadius: 8,
+    padding: 4,
+  },
+  tabBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  tabBtnActive: {
+    backgroundColor: '#cb997e',
+  },
+  tabText: {
+    color: 'rgba(255,255,255,0.5)',
+    fontWeight: 'bold',
+    fontSize: 12,
+  },
+  tabTextActive: {
+    color: '#fff',
   },
   title: {
     color: '#ddbea9',

@@ -9,7 +9,10 @@ export type PrimitiveType =
   | 'loop_block'
   | 'game_start'
   | 'game_end'
-  | 'spawner_marker';
+  | 'spawner_marker'
+  // New Scene Components
+  | 'tile'
+  | 'text_element';
 
 export type GridSnap = 'off' | 8 | 16 | 32;
 

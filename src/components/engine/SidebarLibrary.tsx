@@ -3,21 +3,27 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from
 import { withSpring } from 'react-native-reanimated';
 import { PrimitiveType, GridSnap } from '../../types/engineTypes';
 import { useEngine } from '../../context/EngineContext';
+import { useBlueprint } from '../../context/BlueprintContext';
 import { PrimitiveRenderer } from './primitives/PrimitiveRenderer';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 
-const PRIMITIVES: PrimitiveType[] = [
+const SCENE_PRIMITIVES: PrimitiveType[] = [
   'grid',
+  'spawner_marker',
+  'tile',
+  'text_element'
+];
+
+const BLUEPRINT_PRIMITIVES: PrimitiveType[] = [
   'input_block',
   'deadblock',
   'flowflow',
   'if_else_block',
   'loop_block',
   'game_start',
-  'game_end',
-  'spawner_marker',
+  'game_end'
 ];
 
 const getIcon = (type: PrimitiveType) => {
@@ -42,13 +48,22 @@ const getIcon = (type: PrimitiveType) => {
       return <Feather name="stop-circle" size={size} color={color} />;
     case 'spawner_marker':
       return <MaterialCommunityIcons name="target" size={size} color="#f28482" />;
+    case 'tile':
+      return <Feather name="square" size={size} color={color} />;
+    case 'text_element':
+      return <Feather name="type" size={size} color={color} />;
     default:
       return <Feather name="help-circle" size={size} color={color} />;
   }
 };
 
-export const SidebarLibrary: React.FC = () => {
+interface Props {
+  mode: 'scene' | 'blueprint';
+}
+
+export const SidebarLibrary: React.FC<Props> = ({ mode }) => {
   const { addElement, elements, setElements, panX, panY, scale } = useEngine();
+  const { addLogicNode, panX: bpPanX, panY: bpPanY, scale: bpScale } = useBlueprint();
   const [activeName, setActiveName] = React.useState<string | null>(null);
 
   const handleAdd = (type: PrimitiveType) => {
@@ -59,9 +74,13 @@ export const SidebarLibrary: React.FC = () => {
     // Blender style: Find active spawner_marker element on canvas
     const spawner = elements.find((el) => el.type === 'spawner_marker');
     
-    // Compute current screen center in canvas-space (adding base 2x offset)
-    let x = SCREEN_W * 2 + (SCREEN_W / 2 - panX.value) / scale.value - w / 2;
-    let y = SCREEN_H * 2 + (SCREEN_H / 2 - panY.value) / scale.value - h / 2;
+    // Compute current screen center in canvas-space
+    let currentPanX = mode === 'scene' ? panX.value : bpPanX.value;
+    let currentPanY = mode === 'scene' ? panY.value : bpPanY.value;
+    let currentScale = mode === 'scene' ? scale.value : bpScale.value;
+
+    let x = SCREEN_W * 2 + (SCREEN_W / 2 - currentPanX) / currentScale - w / 2;
+    let y = SCREEN_H * 2 + (SCREEN_H / 2 - currentPanY) / currentScale - h / 2;
 
     if (spawner) {
       x = spawner.x + spawner.w / 2 - w / 2;
@@ -72,42 +91,48 @@ export const SidebarLibrary: React.FC = () => {
     x = Math.round(x / 40) * 40;
     y = Math.round(y / 40) * 40;
 
-    console.log("[Make2D Engine] SPAWNING ELEMENT:", type, { x, y, w, h, panX: panX.value, panY: panY.value, scale: scale.value });
+    console.log("[Make2D Engine] SPAWNING ELEMENT:", type, { x, y, w, h });
 
     setActiveName(type.replace(/_/g, ' ').toUpperCase());
+    const newId = Math.random().toString(36).substring(7);
 
-    addElement({
-      id: Math.random().toString(36).substring(7),
-      type,
-      x,
-      y,
-      w,
-      h,
-    });
+    if (mode === 'scene') {
+      addElement({ id: newId, type, x, y, w, h });
+    } else {
+      addLogicNode({ id: newId, type, targetSceneId: null, x, y });
+    }
   };
 
   const handleReset = () => {
-    panX.value = 0;
-    panY.value = 0;
-    scale.value = 1;
+    if (mode === 'scene') {
+      panX.value = 0;
+      panY.value = 0;
+      scale.value = 1;
 
-    // Reset spawner marker back to center of screen if present
-    setElements((prev) =>
-      prev.map((el) => {
-        if (el.type === 'spawner_marker') {
-          const sx = Math.round((SCREEN_W * 2.5 - 20) / 40) * 40;
-          const sy = Math.round((SCREEN_H * 2.5 - 20) / 40) * 40;
-          return { ...el, x: sx, y: sy };
-        }
-        return el;
-      })
-    );
+      // Reset spawner marker back to center of screen if present
+      setElements((prev) =>
+        prev.map((el) => {
+          if (el.type === 'spawner_marker') {
+            const sx = Math.round((SCREEN_W * 2.5 - 20) / 40) * 40;
+            const sy = Math.round((SCREEN_H * 2.5 - 20) / 40) * 40;
+            return { ...el, x: sx, y: sy };
+          }
+          return el;
+        })
+      );
+    } else {
+      bpPanX.value = 0;
+      bpPanY.value = 0;
+      bpScale.value = 1;
+    }
   };
+
+  const currentPrimitives = mode === 'scene' ? SCENE_PRIMITIVES : BLUEPRINT_PRIMITIVES;
 
   return (
     <View style={styles.dock}>
       <View style={styles.dockHeader}>
-        <Text style={styles.headerTitle}>Make2D Library</Text>
+        <Text style={styles.headerTitle}>{mode === 'scene' ? 'Canvas Library' : 'Blueprint Library'}</Text>
         <TouchableOpacity style={styles.resetBtn} onPress={handleReset}>
           <MaterialCommunityIcons name="cached" size={14} color="#ddbea9" style={{ marginRight: 4 }} />
           <Text style={styles.resetBtnText}>RESET</Text>
@@ -121,7 +146,7 @@ export const SidebarLibrary: React.FC = () => {
       </View>
 
       <View style={styles.iconGrid}>
-        {PRIMITIVES.map((prim) => (
+        {currentPrimitives.map((prim) => (
           <TouchableOpacity
             key={prim}
             onPress={() => handleAdd(prim)}
