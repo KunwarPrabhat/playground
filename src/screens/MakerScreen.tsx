@@ -5,6 +5,7 @@ import { SidebarLibrary } from '../components/engine/SidebarLibrary';
 import { CanvasWorkspace } from '../components/engine/CanvasWorkspace';
 import { HierarchyPanel } from '../components/engine/HierarchyPanel';
 import { BlueprintWorkspace } from '../components/engine/BlueprintWorkspace';
+import { GlobalStatePanel } from '../components/engine/GlobalStatePanel';
 import { BlueprintProvider } from '../context/BlueprintContext';
 import { Feather } from '@expo/vector-icons';
 
@@ -12,7 +13,7 @@ const EngineInterface: React.FC = () => {
   const { mode, setMode, elements, selectedId, deleteElement } = useEngine();
   const [showLibrary, setShowLibrary] = useState(false);
   const [showHierarchy, setShowHierarchy] = useState(false);
-  const [activeTab, setActiveTab] = useState<'scene' | 'blueprint'>('scene');
+  const [activeTab, setActiveTab] = useState<'scene' | 'blueprint' | 'global_state'>('scene');
 
   if (mode === 'play') {
     return (
@@ -44,6 +45,12 @@ const EngineInterface: React.FC = () => {
           >
             <Text style={[styles.tabText, activeTab === 'blueprint' && styles.tabTextActive]}>Blueprint</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tabBtn, activeTab === 'global_state' && styles.tabBtnActive]}
+            onPress={() => setActiveTab('global_state')}
+          >
+            <Text style={[styles.tabText, activeTab === 'global_state' && styles.tabTextActive]}>State</Text>
+          </TouchableOpacity>
         </View>
         <View style={styles.headerActions}>
           {selectedId && (
@@ -56,9 +63,11 @@ const EngineInterface: React.FC = () => {
               <Feather name="list" size={16} color="#fff" />
             </TouchableOpacity>
           )}
-          <TouchableOpacity onPress={() => setShowLibrary(!showLibrary)} style={styles.modeBtn}>
-            <Feather name="box" size={16} color="#fff" />
-          </TouchableOpacity>
+          {activeTab !== 'global_state' && (
+            <TouchableOpacity onPress={() => setShowLibrary(!showLibrary)} style={styles.modeBtn}>
+              <Feather name="box" size={16} color="#fff" />
+            </TouchableOpacity>
+          )}
           <TouchableOpacity onPress={() => setMode('play')} style={styles.modeBtn}>
             <Feather name="play" size={16} color="#71a071" />
           </TouchableOpacity>
@@ -78,9 +87,15 @@ const EngineInterface: React.FC = () => {
         >
           <BlueprintWorkspace />
         </View>
-        {showLibrary && (
+        <View 
+          style={[StyleSheet.absoluteFill, { opacity: activeTab === 'global_state' ? 1 : 0, zIndex: activeTab === 'global_state' ? 1 : 0 }]} 
+          pointerEvents={activeTab === 'global_state' ? 'auto' : 'none'}
+        >
+          <GlobalStatePanel />
+        </View>
+        {showLibrary && activeTab !== 'global_state' && (
           <View style={styles.floatingSidebar}>
-            <SidebarLibrary mode={activeTab} />
+            <SidebarLibrary mode={activeTab as 'scene' | 'blueprint'} />
           </View>
         )}
       </View>

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { useSharedValue, SharedValue } from 'react-native-reanimated';
-import { ElementNode, EngineMode, GridSnap } from '../types/engineTypes';
+import { ElementNode, EngineMode, GridSnap, GlobalVariable } from '../types/engineTypes';
 
 interface EngineContextType {
   mode: EngineMode;
@@ -18,6 +18,10 @@ interface EngineContextType {
   panX: SharedValue<number>;
   panY: SharedValue<number>;
   scale: SharedValue<number>;
+  globalVariables: GlobalVariable[];
+  addGlobalVariable: () => void;
+  updateGlobalVariable: (id: string, updates: Partial<GlobalVariable>) => void;
+  removeGlobalVariable: (id: string) => void;
 }
 
 const EngineContext = createContext<EngineContextType | undefined>(undefined);
@@ -27,6 +31,7 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [elements, setElements] = useState<ElementNode[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [snapSize, setSnapSize] = useState<GridSnap>(16);
+  const [globalVariables, setGlobalVariables] = useState<GlobalVariable[]>([]);
 
   const panX = useSharedValue(0);
   const panY = useSharedValue(0);
@@ -48,6 +53,25 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setElements((prev) =>
       prev.map((el) => (el.id === id ? { ...el, ...updates } : el))
     );
+  }, []);
+
+  const addGlobalVariable = useCallback(() => {
+    setGlobalVariables((prev) => [
+      ...prev,
+      {
+        id: Math.random().toString(36).substring(7),
+        name: `Var_${prev.length + 1}`,
+        value: 0
+      }
+    ]);
+  }, []);
+
+  const updateGlobalVariable = useCallback((id: string, updates: Partial<GlobalVariable>) => {
+    setGlobalVariables((prev) => prev.map(v => v.id === id ? { ...v, ...updates } : v));
+  }, []);
+
+  const removeGlobalVariable = useCallback((id: string) => {
+    setGlobalVariables((prev) => prev.filter(v => v.id !== id));
   }, []);
 
   const moveElementTree = useCallback((id: string, dx: number, dy: number) => {
@@ -95,6 +119,10 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         panX,
         panY,
         scale,
+        globalVariables,
+        addGlobalVariable,
+        updateGlobalVariable,
+        removeGlobalVariable
       }}
     >
       {children}

@@ -29,4 +29,10 @@ export interface ElementNode {
   props?: Record<string, any>;
 }
 
+export interface GlobalVariable {
+  id: string;
+  name: string;
+  value: number;
+}
+
 export type EngineMode = 'edit' | 'play';
