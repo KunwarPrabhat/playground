@@ -8,12 +8,14 @@ export interface LogicNode {
   targetSceneId: string | null;
   x: number;
   y: number;
+  props?: Record<string, any>;
 }
 
 export interface Wire {
   id: string;
   fromNodeId: string;
   toNodeId: string;
+  fromPinId?: string; // Optional for multi-pin support like True/False
 }
 
 interface BlueprintContextType {
@@ -30,6 +32,9 @@ interface BlueprintContextType {
   scale: SharedValue<number>;
   selectedNodeId: string | null;
   setSelectedNodeId: (id: string | null) => void;
+  draftWire: { startX: number; startY: number; endX: number; endY: number } | null;
+  setDraftWire: (wire: { startX: number; startY: number; endX: number; endY: number } | null) => void;
+  deleteLogicNode: (id: string) => void;
 }
 
 const BlueprintContext = createContext<BlueprintContextType | undefined>(undefined);
@@ -38,6 +43,7 @@ export const BlueprintProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [nodes, setNodes] = useState<LogicNode[]>([]);
   const [wires, setWires] = useState<Wire[]>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [draftWire, setDraftWire] = useState<{ startX: number, startY: number, endX: number, endY: number } | null>(null);
 
   const panX = useSharedValue(0);
   const panY = useSharedValue(0);
@@ -56,7 +62,19 @@ export const BlueprintProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, []);
 
   const addWire = useCallback((wire: Wire) => {
-    setWires((prev) => [...prev, wire]);
+    console.log("[BlueprintContext] ADDING WIRE:", wire);
+    setWires((prev) => {
+      // Avoid duplicate connections between same nodes
+      const exists = prev.some(w => w.fromNodeId === wire.fromNodeId && w.toNodeId === wire.toNodeId);
+      if (exists) return prev;
+      return [...prev, wire];
+    });
+  }, []);
+
+  const deleteLogicNode = useCallback((id: string) => {
+    console.log("[BlueprintContext] DELETING LOGIC NODE:", id);
+    setNodes((prev) => prev.filter((n) => n.id !== id));
+    setWires((prev) => prev.filter((w) => w.fromNodeId !== id && w.toNodeId !== id));
   }, []);
 
   return (
@@ -74,7 +92,10 @@ export const BlueprintProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         panY,
         scale,
         selectedNodeId,
-        setSelectedNodeId
+        setSelectedNodeId,
+        draftWire,
+        setDraftWire,
+        deleteLogicNode
       }}
     >
       {children}

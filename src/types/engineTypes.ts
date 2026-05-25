@@ -2,17 +2,15 @@ import { SharedValue } from 'react-native-reanimated';
 
 export type PrimitiveType =
   | 'grid'
-  | 'input_block'
-  | 'deadblock'
-  | 'flowflow'
-  | 'if_else_block'
-  | 'loop_block'
-  | 'game_start'
-  | 'game_end'
   | 'spawner_marker'
-  // New Scene Components
   | 'tile'
-  | 'text_element';
+  | 'text_element'
+  // Blueprint Blocks
+  | 'on_interact'
+  | 'modify_variable'
+  | 'compare_state'
+  | 'set_canvas_text'
+  | 'random_int';
 
 export type GridSnap = 'off' | 8 | 16 | 32;
 

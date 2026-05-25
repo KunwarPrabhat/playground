@@ -5,15 +5,16 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useBlueprint, LogicNode } from '../../context/BlueprintContext';
 import { useEngine } from '../../context/EngineContext';
 import { Feather } from '@expo/vector-icons';
+import { TextInput } from 'react-native';
 
 interface Props {
   node: LogicNode;
 }
 
 export const LogicNodeUI: React.FC<Props> = ({ node }) => {
-  const { updateLogicNode, updateLogicNodeTarget, selectedNodeId, setSelectedNodeId } = useBlueprint();
-  const { elements } = useEngine();
-  const [showPicker, setShowPicker] = useState(false);
+  const { nodes, addWire, updateLogicNode, updateLogicNodeTarget, selectedNodeId, setSelectedNodeId, scale, setDraftWire, deleteLogicNode } = useBlueprint();
+  const { elements, globalVariables } = useEngine();
+  const [showPicker, setShowPicker] = useState<string | false>(false);
 
   const isSelected = selectedNodeId === node.id;
 
@@ -29,17 +30,64 @@ export const LogicNodeUI: React.FC<Props> = ({ node }) => {
     updateLogicNode(node.id, { x, y });
   };
 
-  const panGesture = Gesture.Pan()
-    .onUpdate((e) => {
-      translateX.value = Math.round((node.x + e.translationX) / 20) * 20;
-      translateY.value = Math.round((node.y + e.translationY) / 20) * 20;
+  const nodePanGesture = Gesture.Pan()
+    .onStart(() => {
+      runOnJS(setSelectedNodeId)(node.id);
+    })
+    .onChange((e) => {
+      translateX.value += e.changeX / scale.value;
+      translateY.value += e.changeY / scale.value;
     })
     .onEnd(() => {
-      const sx = translateX.value;
-      const sy = translateY.value;
-      translateX.value = withSpring(sx, { damping: 15, stiffness: 120 });
-      translateY.value = withSpring(sy, { damping: 15, stiffness: 120 });
-      runOnJS(commitChanges)(sx, sy);
+      runOnJS(updateLogicNode)(node.id, { x: translateX.value, y: translateY.value });
+    });
+
+  const handleConnectWire = (dX: number, dY: number) => {
+    console.log("[LogicNodeUI] handleConnectWire target drop coordinates in canvas-space:", dX, dY);
+    for (const targetNode of nodes) {
+      if (targetNode.id === node.id) continue;
+      
+      const pinX = targetNode.x;
+      const pinY = targetNode.y + 55;
+      const dist = Math.hypot(pinX - dX, pinY - dY);
+      
+      console.log(`[LogicNodeUI] Checking target node: ${targetNode.id} at pinX:${pinX}, pinY:${pinY}. Distance is ${dist}`);
+      
+      if (dist < 120) { // Even larger snapping tolerance for easy finger gestures!
+        console.log(`[LogicNodeUI] Snapped successfully to node ${targetNode.id}! Creating wire.`);
+        addWire({
+          id: Math.random().toString(36).substring(7),
+          fromNodeId: node.id,
+          toNodeId: targetNode.id
+        });
+        break;
+      }
+    }
+  };
+
+  const wirePanGesture = Gesture.Pan()
+    .onStart(() => {
+      runOnJS(setDraftWire)({
+        startX: node.x + 180,
+        startY: node.y + 55,
+        endX: node.x + 180,
+        endY: node.y + 55
+      });
+    })
+    .onUpdate((e) => {
+      runOnJS(setDraftWire)({
+        startX: node.x + 180,
+        startY: node.y + 55,
+        endX: node.x + 180 + e.translationX / scale.value,
+        endY: node.y + 55 + e.translationY / scale.value
+      });
+    })
+    .onEnd((e) => {
+      const dropX = node.x + 180 + e.translationX / scale.value;
+      const dropY = node.y + 55 + e.translationY / scale.value;
+      
+      runOnJS(setDraftWire)(null);
+      runOnJS(handleConnectWire)(dropX, dropY);
     });
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -49,8 +97,16 @@ export const LogicNodeUI: React.FC<Props> = ({ node }) => {
     ],
   }));
 
-  const handleSelectTarget = (targetId: string) => {
-    updateLogicNodeTarget(node.id, targetId);
+  const updateNodeProp = (key: string, value: any) => {
+    updateLogicNode(node.id, { props: { ...node.props, [key]: value } });
+  };
+
+  const handleSelectPicker = (val: string) => {
+    if (showPicker === 'targetSceneId') {
+      updateLogicNodeTarget(node.id, val);
+    } else if (showPicker) {
+      updateNodeProp(showPicker, val);
+    }
     setShowPicker(false);
   };
 
@@ -58,10 +114,11 @@ export const LogicNodeUI: React.FC<Props> = ({ node }) => {
 
   const getColors = () => {
     switch (node.type) {
-      case 'input_block': return { bg: 'rgba(203, 153, 126, 0.8)', border: '#cb997e' };
-      case 'flowflow': return { bg: 'rgba(165, 165, 141, 0.8)', border: '#a5a58d' };
-      case 'if_else_block': return { bg: 'rgba(183, 183, 164, 0.8)', border: '#b7b7a4' };
-      case 'loop_block': return { bg: 'rgba(221, 190, 169, 0.8)', border: '#ddbea9' };
+      case 'on_interact': return { bg: 'rgba(203, 153, 126, 0.8)', border: '#cb997e' };
+      case 'modify_variable': return { bg: 'rgba(165, 165, 141, 0.8)', border: '#a5a58d' };
+      case 'compare_state': return { bg: 'rgba(183, 183, 164, 0.8)', border: '#b7b7a4' };
+      case 'set_canvas_text': return { bg: 'rgba(221, 190, 169, 0.8)', border: '#ddbea9' };
+      case 'random_int': return { bg: 'rgba(100, 150, 200, 0.8)', border: '#6496c8' };
       default: return { bg: 'rgba(255, 255, 255, 0.5)', border: '#ccc' };
     }
   };
@@ -70,53 +127,122 @@ export const LogicNodeUI: React.FC<Props> = ({ node }) => {
 
   return (
     <Animated.View style={[styles.container, animatedStyle, { zIndex: isSelected ? 100 : 1 }]}>
-      <GestureDetector gesture={panGesture}>
-        <Animated.View style={StyleSheet.absoluteFill}>
-          <TouchableWithoutFeedback onPress={() => setSelectedNodeId(node.id)}>
-            <View style={[styles.block, { backgroundColor: colors.bg, borderColor: isSelected ? '#fff' : colors.border }]}>
+      <GestureDetector gesture={nodePanGesture}>
+        <View style={[styles.block, { backgroundColor: colors.bg, borderColor: isSelected ? '#fff' : colors.border }]}>
+          {/* Pins on the middle borders */}
+          <View style={[styles.pin, styles.pinLeft]} />
+          <GestureDetector gesture={wirePanGesture}>
+            <View style={[styles.pin, styles.pinRight]} hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }} />
+          </GestureDetector>
 
-              {/* Input Pin */}
-              <View style={[styles.pin, styles.pinLeft]} />
-              {/* Output Pin */}
-              <View style={[styles.pin, styles.pinRight]} />
+          {/* Premium Glowing Absolute-Positioned Delete Button on Top Right Intersection */}
+          <TouchableOpacity 
+            onPress={() => deleteLogicNode(node.id)} 
+            style={styles.deleteNodeBtn}
+            activeOpacity={0.7}
+          >
+            <Feather name="x" size={10} color="#ff4d4d" />
+          </TouchableOpacity>
 
-              <Text style={styles.title}>{formatTitle(node.type)}</Text>
+          <View style={{ flex: 1 }} pointerEvents="box-none">
+            <View style={{ marginBottom: 6, paddingRight: 12 }}>
+              <Text style={styles.title} numberOfLines={1}>{formatTitle(node.type)}</Text>
+            </View>
 
+            {(node.type === 'on_interact' || node.type === 'set_canvas_text') && (
               <View style={styles.targetSection}>
-                <Text style={styles.targetLabel}>Target Scene Element:</Text>
-                <TouchableOpacity
-                  style={styles.targetBtn}
-                  onPress={() => {
-                    setSelectedNodeId(node.id);
-                    setShowPicker(!showPicker);
-                  }}
-                >
-                  <Text style={styles.targetBtnText} numberOfLines={1}>
-                    {node.targetSceneId ? (elements.find(e => e.id === node.targetSceneId)?.name || 'Missing Element') : 'Select Target'}
-                  </Text>
+                <Text style={styles.targetLabel}>Target Canvas ID:</Text>
+                <TouchableOpacity style={styles.targetBtn} onPress={() => { setSelectedNodeId(node.id); setShowPicker(showPicker === 'targetSceneId' ? false : 'targetSceneId'); }}>
+                  <Text style={styles.targetBtnText} numberOfLines={1}>{node.targetSceneId ? (elements.find(e => e.id === node.targetSceneId)?.name || node.targetSceneId) : 'Select Element'}</Text>
                   <Feather name="chevron-down" size={12} color="#fff" />
                 </TouchableOpacity>
               </View>
+            )}
 
-            </View>
-          </TouchableWithoutFeedback>
-        </Animated.View>
+            {node.type === 'modify_variable' && (
+              <View style={styles.targetSection}>
+                <Text style={styles.targetLabel}>Target Variable:</Text>
+                <TouchableOpacity style={styles.targetBtn} onPress={() => { setSelectedNodeId(node.id); setShowPicker(showPicker === 'targetVar' ? false : 'targetVar'); }}>
+                  <Text style={styles.targetBtnText} numberOfLines={1}>{node.props?.targetVar ? (globalVariables.find(v => v.id === node.props?.targetVar)?.name || 'Missing') : 'Select Variable'}</Text>
+                  <Feather name="chevron-down" size={12} color="#fff" />
+                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', gap: 4, marginTop: 4 }}>
+                  <TouchableOpacity style={styles.opBtn} onPress={() => { setSelectedNodeId(node.id); setShowPicker(showPicker === 'op' ? false : 'op'); }}>
+                    <Text style={styles.targetBtnText}>{node.props?.op || '='}</Text>
+                  </TouchableOpacity>
+                  <TextInput style={styles.valInput} value={node.props?.val?.toString() || ''} onChangeText={(t) => updateNodeProp('val', t)} placeholder="Value" placeholderTextColor="rgba(255,255,255,0.4)" />
+                </View>
+              </View>
+            )}
+
+            {node.type === 'compare_state' && (
+              <View style={styles.targetSection}>
+                <Text style={styles.targetLabel}>Compare:</Text>
+                <TouchableOpacity style={styles.targetBtn} onPress={() => { setSelectedNodeId(node.id); setShowPicker(showPicker === 'varA' ? false : 'varA'); }}>
+                  <Text style={styles.targetBtnText} numberOfLines={1}>{node.props?.varA ? (globalVariables.find(v => v.id === node.props?.varA)?.name || 'Missing') : 'Variable A'}</Text>
+                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', gap: 4, marginTop: 4 }}>
+                  <TouchableOpacity style={styles.opBtn} onPress={() => { setSelectedNodeId(node.id); setShowPicker(showPicker === 'cond' ? false : 'cond'); }}>
+                    <Text style={styles.targetBtnText}>{node.props?.cond || '=='}</Text>
+                  </TouchableOpacity>
+                  <TextInput style={styles.valInput} value={node.props?.varB?.toString() || ''} onChangeText={(t) => updateNodeProp('varB', t)} placeholder="Var B or Val" placeholderTextColor="rgba(255,255,255,0.4)" />
+                </View>
+              </View>
+            )}
+
+            {node.type === 'random_int' && (
+              <View style={styles.targetSection}>
+                <Text style={styles.targetLabel}>Range:</Text>
+                <View style={{ flexDirection: 'row', gap: 4 }}>
+                  <TextInput style={styles.valInput} value={node.props?.min?.toString() || ''} onChangeText={(t) => updateNodeProp('min', t)} placeholder="Min" placeholderTextColor="rgba(255,255,255,0.4)" />
+                  <TextInput style={styles.valInput} value={node.props?.max?.toString() || ''} onChangeText={(t) => updateNodeProp('max', t)} placeholder="Max" placeholderTextColor="rgba(255,255,255,0.4)" />
+                </View>
+              </View>
+            )}
+          </View>
+        </View>
       </GestureDetector>
 
-      {/* Target Picker Popover */}
+      {/* Dynamic Picker Popover */}
       {isSelected && showPicker && (
         <View style={styles.pickerOverlay}>
-          <Text style={styles.pickerTitle}>Scene Elements</Text>
+          <Text style={styles.pickerTitle}>Select Option</Text>
           <ScrollView style={styles.pickerList} nestedScrollEnabled>
-            {elements.map((el) => (
-              <TouchableOpacity key={el.id} style={styles.pickerOption} onPress={() => handleSelectTarget(el.id)}>
+            
+            {showPicker === 'targetSceneId' && elements.map((el) => (
+              <TouchableOpacity key={el.id} style={styles.pickerOption} onPress={() => handleSelectPicker(el.id)}>
                 <Text style={styles.pickerOptionName}>{el.name}</Text>
-                <Text style={styles.pickerOptionId}>{el.id}</Text>
+                <Text style={styles.pickerOptionId}>{el.type}</Text>
               </TouchableOpacity>
             ))}
-            {elements.length === 0 && (
+
+            {(showPicker === 'targetVar' || showPicker === 'varA') && globalVariables.map((v) => (
+              <TouchableOpacity key={v.id} style={styles.pickerOption} onPress={() => handleSelectPicker(v.id)}>
+                <Text style={styles.pickerOptionName}>{v.name}</Text>
+                <Text style={styles.pickerOptionId}>Val: {v.value}</Text>
+              </TouchableOpacity>
+            ))}
+
+            {showPicker === 'op' && ['+', '-', '=', '*'].map((op) => (
+              <TouchableOpacity key={op} style={styles.pickerOption} onPress={() => handleSelectPicker(op)}>
+                <Text style={styles.pickerOptionName}>{op}</Text>
+              </TouchableOpacity>
+            ))}
+
+            {showPicker === 'cond' && ['==', '!=', '>', '<', '>=', '<='].map((cond) => (
+              <TouchableOpacity key={cond} style={styles.pickerOption} onPress={() => handleSelectPicker(cond)}>
+                <Text style={styles.pickerOptionName}>{cond}</Text>
+              </TouchableOpacity>
+            ))}
+
+            {/* Empty states */}
+            {showPicker === 'targetSceneId' && elements.length === 0 && (
               <Text style={styles.pickerOptionName}>No elements in scene</Text>
             )}
+            {(showPicker === 'targetVar' || showPicker === 'varA') && globalVariables.length === 0 && (
+              <Text style={styles.pickerOptionName}>No variables defined</Text>
+            )}
+
           </ScrollView>
         </View>
       )}
@@ -129,11 +255,12 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     left: 0,
-    width: 160,
-    height: 100,
+    width: 180,
+    minHeight: 110,
   },
   block: {
-    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
     borderWidth: 2,
     borderRadius: 8,
     padding: 10,
@@ -195,6 +322,24 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 4,
   },
+  opBtn: {
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    padding: 4,
+    borderRadius: 4,
+    minWidth: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  valInput: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    color: '#fff',
+    fontSize: 10,
+    padding: 0,
+    paddingHorizontal: 4,
+    borderRadius: 4,
+    height: 22,
+  },
   pickerOverlay: {
     position: 'absolute',
     top: 105,
@@ -234,5 +379,24 @@ const styles = StyleSheet.create({
   pickerOptionId: {
     color: '#666',
     fontSize: 8,
+  },
+  deleteNodeBtn: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#2a0a0a',
+    borderWidth: 2,
+    borderColor: '#ff4d4d',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#ff0000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 4,
+    elevation: 6,
+    zIndex: 20,
   },
 });

@@ -17,13 +17,11 @@ const SCENE_PRIMITIVES: PrimitiveType[] = [
 ];
 
 const BLUEPRINT_PRIMITIVES: PrimitiveType[] = [
-  'input_block',
-  'deadblock',
-  'flowflow',
-  'if_else_block',
-  'loop_block',
-  'game_start',
-  'game_end'
+  'on_interact',
+  'modify_variable',
+  'compare_state',
+  'set_canvas_text',
+  'random_int'
 ];
 
 const getIcon = (type: PrimitiveType) => {
@@ -32,22 +30,16 @@ const getIcon = (type: PrimitiveType) => {
   switch (type) {
     case 'grid':
       return <Feather name="grid" size={size} color={color} />;
-    case 'input_block':
-      return <MaterialCommunityIcons name="keyboard-outline" size={size} color={color} />;
-    case 'deadblock':
-      return <Feather name="slash" size={size} color={color} />;
-    case 'flowflow':
+    case 'on_interact':
+      return <Feather name="mouse-pointer" size={size} color={color} />;
+    case 'modify_variable':
+      return <Feather name="edit-3" size={size} color={color} />;
+    case 'compare_state':
       return <Feather name="git-branch" size={size} color={color} />;
-    case 'if_else_block':
-      return <MaterialCommunityIcons name="call-split" size={size} color={color} />;
-    case 'loop_block':
-      return <Feather name="repeat" size={size} color={color} />;
-    case 'game_start':
-      return <Feather name="play-circle" size={size} color={color} />;
-    case 'game_end':
-      return <Feather name="stop-circle" size={size} color={color} />;
-    case 'spawner_marker':
-      return <MaterialCommunityIcons name="target" size={size} color="#f28482" />;
+    case 'set_canvas_text':
+      return <Feather name="monitor" size={size} color={color} />;
+    case 'random_int':
+      return <Feather name="shuffle" size={size} color={color} />;
     case 'tile':
       return <Feather name="square" size={size} color={color} />;
     case 'text_element':
@@ -71,9 +63,6 @@ export const SidebarLibrary: React.FC<Props> = ({ mode }) => {
     const w = type === 'grid' ? 160 : (type === 'spawner_marker' ? 40 : 80);
     const h = type === 'grid' ? 160 : (type === 'spawner_marker' ? 40 : 80);
     
-    // Blender style: Find active spawner_marker element on canvas
-    const spawner = elements.find((el) => el.type === 'spawner_marker');
-    
     // Compute current screen center in canvas-space
     let currentPanX = mode === 'scene' ? panX.value : bpPanX.value;
     let currentPanY = mode === 'scene' ? panY.value : bpPanY.value;
@@ -82,9 +71,12 @@ export const SidebarLibrary: React.FC<Props> = ({ mode }) => {
     let x = SCREEN_W * 2 + (SCREEN_W / 2 - currentPanX) / currentScale - w / 2;
     let y = SCREEN_H * 2 + (SCREEN_H / 2 - currentPanY) / currentScale - h / 2;
 
-    if (spawner) {
-      x = spawner.x + spawner.w / 2 - w / 2;
-      y = spawner.y + spawner.h / 2 - h / 2;
+    if (mode === 'scene') {
+      const spawner = elements.find((el) => el.type === 'spawner_marker');
+      if (spawner) {
+        x = spawner.x + spawner.w / 2 - w / 2;
+        y = spawner.y + spawner.h / 2 - h / 2;
+      }
     }
 
     // Magnetically snap the initial spawn location to 40px grid
@@ -133,10 +125,12 @@ export const SidebarLibrary: React.FC<Props> = ({ mode }) => {
     <View style={styles.dock}>
       <View style={styles.dockHeader}>
         <Text style={styles.headerTitle}>{mode === 'scene' ? 'Canvas Library' : 'Blueprint Library'}</Text>
-        <TouchableOpacity style={styles.resetBtn} onPress={handleReset}>
-          <MaterialCommunityIcons name="cached" size={14} color="#ddbea9" style={{ marginRight: 4 }} />
-          <Text style={styles.resetBtnText}>RESET</Text>
-        </TouchableOpacity>
+        {mode === 'scene' && (
+          <TouchableOpacity style={styles.resetBtn} onPress={handleReset}>
+            <MaterialCommunityIcons name="cached" size={14} color="#ddbea9" style={{ marginRight: 4 }} />
+            <Text style={styles.resetBtnText}>RESET</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <View style={styles.activeTagContainer}>
