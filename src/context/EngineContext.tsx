@@ -22,6 +22,7 @@ interface EngineContextType {
   addGlobalVariable: () => void;
   updateGlobalVariable: (id: string, updates: Partial<GlobalVariable>) => void;
   removeGlobalVariable: (id: string) => void;
+  updateElementState: (id: string, key: string, value: any) => void;
 }
 
 const EngineContext = createContext<EngineContextType | undefined>(undefined);
@@ -101,6 +102,24 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setSelectedId((prev) => (prev === id ? null : prev));
   }, []);
 
+  const updateElementState = useCallback((id: string, key: string, value: any) => {
+    setElements((prev) =>
+      prev.map((el) => {
+        if (el.id === id) {
+          const currentState = el.instanceState || {};
+          return {
+            ...el,
+            instanceState: {
+              ...currentState,
+              [key]: value,
+            },
+          };
+        }
+        return el;
+      })
+    );
+  }, []);
+
   return (
     <EngineContext.Provider
       value={{
@@ -122,7 +141,8 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         globalVariables,
         addGlobalVariable,
         updateGlobalVariable,
-        removeGlobalVariable
+        removeGlobalVariable,
+        updateElementState
       }}
     >
       {children}

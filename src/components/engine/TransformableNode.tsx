@@ -18,7 +18,7 @@ interface Props {
 const HANDLE_SIZE = 20;
 
 export const TransformableNode: React.FC<Props> = ({ element }) => {
-  const { updateElement, moveElementTree, selectedId, setSelectedId } = useEngine();
+  const { mode, updateElement, moveElementTree, selectedId, setSelectedId } = useEngine();
 
   const isSelected = selectedId === element.id;
 
@@ -40,6 +40,7 @@ export const TransformableNode: React.FC<Props> = ({ element }) => {
   };
 
   const panGesture = Gesture.Pan()
+  .enabled(mode === 'edit')
     .onUpdate((e) => {
       const rawX = element.x + e.translationX;
       const rawY = element.y + e.translationY;
@@ -57,6 +58,7 @@ export const TransformableNode: React.FC<Props> = ({ element }) => {
     });
 
   const resizeGesture = Gesture.Pan()
+  .enabled(mode === 'edit')
     .onUpdate((e) => {
       const rawW = element.w + e.translationX;
       const rawH = element.h + e.translationY;
@@ -84,7 +86,20 @@ export const TransformableNode: React.FC<Props> = ({ element }) => {
     <Animated.View style={[styles.container, animatedStyle]}>
       <GestureDetector gesture={panGesture}>
         <Animated.View style={StyleSheet.absoluteFill}>
-          <TouchableWithoutFeedback onPress={() => setSelectedId(element.id)}>
+          <TouchableWithoutFeedback
+            onPress={() => {
+              if (mode === 'play') {
+                console.log("[Engine Event] TAP on Element ID:", element.id);
+              } else {
+                setSelectedId(element.id);
+              }
+            }}
+            onLongPress={() => {
+              if (mode === 'play') {
+                console.log("[Engine Event] LONG_PRESS on Element ID:", element.id);
+              }
+            }}
+          >
             <View style={StyleSheet.absoluteFill}>
               <PrimitiveRenderer type={element.type} width={element.w} height={element.h} />
               {isSelected && (

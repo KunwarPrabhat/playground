@@ -25,6 +25,7 @@ export interface ElementNode {
   parentId?: string | null; // For Unity-style grouping
   targetId?: string | null; // For Blueprint nodes to reference a Scene ID
   props?: Record<string, any>;
+  instanceState?: Record<string, any>;
 }
 
 export interface GlobalVariable {
