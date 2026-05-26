@@ -19,7 +19,10 @@ export type PrimitiveType =
   | 'if_else_block'
   | 'init_matrix'
   | 'set_matrix_cell'
-  | 'get_matrix_cell';
+  | 'get_matrix_cell'
+  | 'get_orthogonal'
+  | 'count_elements'
+  | 'on_execution_complete';
 
 export type GridSnap = 'off' | 8 | 16 | 32;
 

@@ -210,9 +210,12 @@ export const LogicNodeUI: React.FC<Props> = ({ node }) => {
       case 'set_instance_var': return { bg: 'rgba(155, 100, 200, 0.8)', border: '#9b64c8' };
       case 'spawn_grid': return { bg: 'rgba(233, 196, 106, 0.8)', border: '#e9c46a' };
       case 'get_in_radius': return { bg: 'rgba(230, 90, 90, 0.8)', border: '#e65a5a' };
+      case 'get_orthogonal': return { bg: 'rgba(230, 150, 90, 0.8)', border: '#e6965a' };
       case 'box_cast': return { bg: 'rgba(230, 120, 90, 0.8)', border: '#e6785a' };
       case 'for_each_loop': return { bg: 'rgba(72, 190, 160, 0.8)', border: '#48bea0' };
       case 'if_else_block': return { bg: 'rgba(160, 100, 220, 0.8)', border: '#a064dc' };
+      case 'count_elements': return { bg: 'rgba(120, 180, 230, 0.8)', border: '#78b4e6' };
+      case 'on_execution_complete': return { bg: 'rgba(80, 200, 120, 0.8)', border: '#50c878' };
       case 'init_matrix':
       case 'set_matrix_cell':
       case 'get_matrix_cell': return { bg: 'rgba(212, 163, 115, 0.8)', border: '#d4a373' };
@@ -276,7 +279,7 @@ export const LogicNodeUI: React.FC<Props> = ({ node }) => {
                   <TouchableOpacity style={styles.opBtn} onPress={() => { setSelectedNodeId(node.id); setShowPicker(showPicker === 'op' ? false : 'op'); }}>
                     <Text style={styles.targetBtnText}>{node.props?.op || '='}</Text>
                   </TouchableOpacity>
-                  <TextInput style={styles.valInput} value={node.props?.val?.toString() || ''} onChangeText={(t) => updateNodeProp('val', t)} placeholder="Value" placeholderTextColor="rgba(255,255,255,0.4)" />
+                  <TextInput style={styles.valInput} value={node.props?.val?.toString() || ''} onChangeText={(t) => updateNodeProp('val', t)} placeholder="Val (or $key)" placeholderTextColor="rgba(255,255,255,0.4)" />
                 </View>
               </View>
             )}
@@ -289,7 +292,7 @@ export const LogicNodeUI: React.FC<Props> = ({ node }) => {
                   <TouchableOpacity style={styles.opBtn} onPress={() => { setSelectedNodeId(node.id); setShowPicker(showPicker === 'op' ? false : 'op'); }}>
                     <Text style={styles.targetBtnText}>{node.props?.op || '='}</Text>
                   </TouchableOpacity>
-                  <TextInput style={styles.valInput} value={node.props?.val?.toString() || ''} onChangeText={(t) => updateNodeProp('val', t)} placeholder="Value" placeholderTextColor="rgba(255,255,255,0.4)" />
+                  <TextInput style={styles.valInput} value={node.props?.val?.toString() || ''} onChangeText={(t) => updateNodeProp('val', t)} placeholder="Val (or $key)" placeholderTextColor="rgba(255,255,255,0.4)" />
                 </View>
               </View>
             )}
@@ -364,6 +367,14 @@ export const LogicNodeUI: React.FC<Props> = ({ node }) => {
               </View>
             )}
 
+            {node.type === 'get_orthogonal' && (
+              <View style={styles.targetSection}>
+                <Text style={styles.targetLabel}>Origin: Active Element</Text>
+                <TextInput style={[styles.valInput, { marginBottom: 4 }]} value={node.props?.distance?.toString() || ''} onChangeText={(t) => updateNodeProp('distance', t)} placeholder="Distance (px)" placeholderTextColor="rgba(255,255,255,0.4)" keyboardType="numeric" />
+                <TextInput style={styles.valInput} value={node.props?.saveKey || ''} onChangeText={(t) => updateNodeProp('saveKey', t)} placeholder="Save Array to Key (e.g. neighbors)" placeholderTextColor="rgba(255,255,255,0.4)" />
+              </View>
+            )}
+
             {node.type === 'box_cast' && (
               <View style={styles.targetSection}>
                 <Text style={styles.targetLabel}>Origin: Active Element</Text>
@@ -391,9 +402,34 @@ export const LogicNodeUI: React.FC<Props> = ({ node }) => {
                   <TouchableOpacity style={styles.opBtn} onPress={() => { setSelectedNodeId(node.id); setShowPicker(showPicker === 'cond' ? false : 'cond'); }}>
                     <Text style={styles.targetBtnText}>{node.props?.cond || '=='}</Text>
                   </TouchableOpacity>
-                  <TextInput style={styles.valInput} value={node.props?.val?.toString() || ''} onChangeText={(t) => updateNodeProp('val', t)} placeholder="Value" placeholderTextColor="rgba(255,255,255,0.4)" />
+                  <TextInput style={styles.valInput} value={node.props?.val?.toString() || ''} onChangeText={(t) => updateNodeProp('val', t)} placeholder="Val (or $key)" placeholderTextColor="rgba(255,255,255,0.4)" />
                 </View>
                 <Text style={[styles.targetLabel, { marginTop: 4, color: '#a064dc' }]}>* Continues ONLY if True</Text>
+              </View>
+            )}
+
+            {node.type === 'count_elements' && (
+              <View style={styles.targetSection}>
+                <Text style={styles.targetLabel}>Count Elements Where:</Text>
+                <TextInput style={[styles.valInput, { marginBottom: 4 }]} value={node.props?.key || ''} onChangeText={(t) => updateNodeProp('key', t)} placeholder="State Key (e.g. owner)" placeholderTextColor="rgba(255,255,255,0.4)" />
+                <View style={{ flexDirection: 'row', gap: 4, marginBottom: 4 }}>
+                  <TouchableOpacity style={styles.opBtn} onPress={() => { setSelectedNodeId(node.id); setShowPicker(showPicker === 'cond' ? false : 'cond'); }}>
+                    <Text style={styles.targetBtnText}>{node.props?.cond || '=='}</Text>
+                  </TouchableOpacity>
+                  <TextInput style={styles.valInput} value={node.props?.val?.toString() || ''} onChangeText={(t) => updateNodeProp('val', t)} placeholder="Val (or $key)" placeholderTextColor="rgba(255,255,255,0.4)" />
+                </View>
+                <TextInput style={styles.valInput} value={node.props?.saveKey || ''} onChangeText={(t) => updateNodeProp('saveKey', t)} placeholder="Save Count To Key" placeholderTextColor="rgba(255,255,255,0.4)" />
+              </View>
+            )}
+
+            {node.type === 'on_execution_complete' && (
+              <View style={styles.targetSection}>
+                <Text style={styles.targetLabel}>Target Canvas ID:</Text>
+                <TouchableOpacity style={styles.targetBtn} onPress={() => { setSelectedNodeId(node.id); setShowPicker(showPicker === 'targetSceneId' ? false : 'targetSceneId'); }}>
+                  <Text style={styles.targetBtnText} numberOfLines={1}>{node.targetSceneId ? (elements.find(e => e.id === node.targetSceneId)?.name || node.targetSceneId) : 'Select Element'}</Text>
+                  <Feather name="chevron-down" size={12} color="#fff" />
+                </TouchableOpacity>
+                <Text style={[styles.targetLabel, { marginTop: 4, color: '#50c878' }]}>* Fires when interaction queue is empty</Text>
               </View>
             )}
 

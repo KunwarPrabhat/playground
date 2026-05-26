@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, Alert } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { EngineProvider, useEngine } from '../context/EngineContext';
 import { SidebarLibrary } from '../components/engine/SidebarLibrary';
 import { CanvasWorkspace } from '../components/engine/CanvasWorkspace';
@@ -96,7 +96,12 @@ const EngineInterface: React.FC<EngineInterfaceProps> = ({ projectId, projectNam
             <Text style={[styles.tabText, activeTab === 'global_state' && styles.tabTextActive]}>State</Text>
           </TouchableOpacity>
         </View>
-        <View style={styles.headerActions}>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          style={styles.headerActionsWrapper}
+          contentContainerStyle={styles.headerActionsScroll}
+        >
           {selectedId && (
             <TouchableOpacity onPress={() => deleteElement(selectedId)} style={styles.deleteBtn}>
               <Feather name="trash-2" size={16} color="#fff" />
@@ -118,7 +123,7 @@ const EngineInterface: React.FC<EngineInterfaceProps> = ({ projectId, projectNam
           <TouchableOpacity onPress={() => setMode('play')} style={styles.modeBtn}>
             <Feather name="play" size={16} color="#71a071" />
           </TouchableOpacity>
-        </View>
+        </ScrollView>
       </View>
       <View style={styles.workspace}>
         <View 
@@ -218,10 +223,14 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: 12,
   },
-  headerActions: {
+  headerActionsWrapper: {
+    marginLeft: 6,
+  },
+  headerActionsScroll: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    paddingRight: 1,
   },
   modeBtn: {
     flexDirection: 'row',

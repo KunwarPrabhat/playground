@@ -30,7 +30,10 @@ const BLUEPRINT_PRIMITIVES: PrimitiveType[] = [
   'if_else_block',
   'init_matrix',
   'set_matrix_cell',
-  'get_matrix_cell'
+  'get_matrix_cell',
+  'get_orthogonal',
+  'count_elements',
+  'on_execution_complete'
 ];
 
 const getIcon = (type: PrimitiveType) => {
@@ -71,6 +74,12 @@ const getIcon = (type: PrimitiveType) => {
       return <Feather name="edit" size={size} color={color} />;
     case 'get_matrix_cell':
       return <Feather name="crosshair" size={size} color={color} />;
+    case 'get_orthogonal':
+      return <Feather name="crosshair" size={size} color={color} />;
+    case 'count_elements':
+      return <Feather name="layers" size={size} color={color} />;
+    case 'on_execution_complete':
+      return <Feather name="check-circle" size={size} color={color} />;
     default:
       return <Feather name="help-circle" size={size} color={color} />;
   }
