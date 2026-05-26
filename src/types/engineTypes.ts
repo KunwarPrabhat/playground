@@ -12,7 +12,11 @@ export type PrimitiveType =
   | 'set_canvas_text'
   | 'random_int'
   | 'set_instance_var'
-  | 'spawn_grid';
+  | 'spawn_grid'
+  | 'get_in_radius'
+  | 'box_cast'
+  | 'for_each_loop'
+  | 'if_else_block';
 
 export type GridSnap = 'off' | 8 | 16 | 32;
 

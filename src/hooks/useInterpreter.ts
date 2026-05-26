@@ -31,6 +31,8 @@ export const useInterpreter = () => {
         return v;
       };
 
+      const activeEl = elements.find((e) => e.id === activeElementId);
+
       if (targetNode.type === 'modify_variable') {
         const targetVarId = targetNode.props?.targetVar;
         const gVar = globalVariables.find((v) => v.id === targetVarId);
@@ -40,13 +42,14 @@ export const useInterpreter = () => {
           console.log(`[Interpreter] Modify Variable [${gVar.name}] from ${gVar.value} to ${newVal}`);
         }
       } else if (targetNode.type === 'set_instance_var') {
-        const activeElement = elements.find((e) => e.id === activeElementId);
-        const key = targetNode.props?.key;
-        if (activeElement && key) {
-          const currentVal = activeElement.instanceState?.[key];
-          const newVal = applyOp(currentVal, targetNode.props?.val, targetNode.props?.op || '=');
-          updateElementState(activeElementId, key, newVal);
-          console.log(`[Interpreter] Set Instance Var [${key}] on element [${activeElement.name}] from ${currentVal} to ${newVal}`);
+        if (activeEl) {
+          const key = targetNode.props?.key;
+          if (key) {
+            const currentVal = activeEl.instanceState?.[key];
+            const newVal = applyOp(currentVal, targetNode.props?.val, targetNode.props?.op || '=');
+            updateElementState(activeElementId, key, newVal);
+            console.log(`[Interpreter] Set Instance Var [${key}] on element [${activeEl.name}] from ${currentVal} to ${newVal}`);
+          }
         }
       } else if (targetNode.type === 'spawn_grid') {
         const templateId = targetNode.targetSceneId;
@@ -82,6 +85,66 @@ export const useInterpreter = () => {
             console.log(`[Interpreter] Spawned grid: ${newElements.length} elements from template [${template.name}]`);
           }
         }
+      } else if (targetNode.type === 'get_in_radius') {
+        if (activeEl) {
+          const radius = parseFloat(targetNode.props?.radius) || 0;
+          const hitIds = elements
+            .filter((el) => el.id !== activeElementId && Math.hypot(el.x - activeEl.x, el.y - activeEl.y) <= radius)
+            .map((el) => el.id);
+          updateElementState(activeElementId, targetNode.props?.saveKey, hitIds);
+          console.log(`[Interpreter] get_in_radius found ${hitIds.length} elements. Saved to '${targetNode.props?.saveKey}'`);
+        }
+      } else if (targetNode.type === 'box_cast') {
+        if (activeEl) {
+          const width = parseFloat(targetNode.props?.width) || 0;
+          const height = parseFloat(targetNode.props?.height) || 0;
+          const hitIds = elements
+            .filter(
+              (el) =>
+                el.id !== activeElementId &&
+                Math.abs(el.x - activeEl.x) <= width / 2 &&
+                Math.abs(el.y - activeEl.y) <= height / 2
+            )
+            .map((el) => el.id);
+          updateElementState(activeElementId, targetNode.props?.saveKey, hitIds);
+          console.log(`[Interpreter] box_cast found ${hitIds.length} elements. Saved to '${targetNode.props?.saveKey}'`);
+        }
+      } else if (targetNode.type === 'if_else_block') {
+        const valA = activeEl?.instanceState?.[targetNode.props?.key];
+        const valB = targetNode.props?.val;
+        const cond = targetNode.props?.cond || '==';
+
+        const compareVals = (a: any, b: any, op: string) => {
+          const numA = parseFloat(a);
+          const numB = parseFloat(b);
+          const isNumA = !isNaN(numA);
+          const isNumB = !isNaN(numB);
+
+          const left = isNumA && isNumB ? numA : (a === undefined || a === null ? '' : a.toString());
+          const right = isNumA && isNumB ? numB : (b === undefined || b === null ? '' : b.toString());
+
+          if (op === '==') return left == right;
+          if (op === '!=') return left != right;
+          if (op === '>') return left > right;
+          if (op === '<') return left < right;
+          if (op === '>=') return left >= right;
+          if (op === '<=') return left <= right;
+          return false;
+        };
+
+        if (!compareVals(valA, valB, cond)) {
+          console.log(`[Interpreter] if_else_block condition failed: ${valA} ${cond} ${valB}. Halting.`);
+          return;
+        }
+      } else if (targetNode.type === 'for_each_loop') {
+        const arr = activeEl?.instanceState?.[targetNode.props?.arrayKey];
+        if (Array.isArray(arr)) {
+          const innerWires = wires.filter((w) => w.fromNodeId === targetNode.id);
+          arr.forEach((targetId) => {
+            innerWires.forEach((w) => traverse(w.toNodeId, targetId));
+          });
+        }
+        return;
       }
 
       traverse(targetNode.id, activeElementId);

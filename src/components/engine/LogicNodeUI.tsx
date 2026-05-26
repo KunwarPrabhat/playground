@@ -209,6 +209,10 @@ export const LogicNodeUI: React.FC<Props> = ({ node }) => {
       case 'random_int': return { bg: 'rgba(100, 150, 200, 0.8)', border: '#6496c8' };
       case 'set_instance_var': return { bg: 'rgba(155, 100, 200, 0.8)', border: '#9b64c8' };
       case 'spawn_grid': return { bg: 'rgba(233, 196, 106, 0.8)', border: '#e9c46a' };
+      case 'get_in_radius': return { bg: 'rgba(230, 90, 90, 0.8)', border: '#e65a5a' };
+      case 'box_cast': return { bg: 'rgba(230, 120, 90, 0.8)', border: '#e6785a' };
+      case 'for_each_loop': return { bg: 'rgba(72, 190, 160, 0.8)', border: '#48bea0' };
+      case 'if_else_block': return { bg: 'rgba(160, 100, 220, 0.8)', border: '#a064dc' };
       default: return { bg: 'rgba(255, 255, 255, 0.5)', border: '#ccc' };
     }
   };
@@ -302,6 +306,47 @@ export const LogicNodeUI: React.FC<Props> = ({ node }) => {
                   <TextInput style={styles.valInput} value={node.props?.gapX?.toString() || ''} onChangeText={(t) => updateNodeProp('gapX', t)} placeholder="Gap X" placeholderTextColor="rgba(255,255,255,0.4)" keyboardType="numeric" />
                   <TextInput style={styles.valInput} value={node.props?.gapY?.toString() || ''} onChangeText={(t) => updateNodeProp('gapY', t)} placeholder="Gap Y" placeholderTextColor="rgba(255,255,255,0.4)" keyboardType="numeric" />
                 </View>
+              </View>
+            )}
+
+            {node.type === 'get_in_radius' && (
+              <View style={styles.targetSection}>
+                <Text style={styles.targetLabel}>Origin: Active Element</Text>
+                <TextInput style={[styles.valInput, { marginBottom: 4 }]} value={node.props?.radius?.toString() || ''} onChangeText={(t) => updateNodeProp('radius', t)} placeholder="Radius (px)" placeholderTextColor="rgba(255,255,255,0.4)" keyboardType="numeric" />
+                <TextInput style={styles.valInput} value={node.props?.saveKey || ''} onChangeText={(t) => updateNodeProp('saveKey', t)} placeholder="Save Array to Key (e.g. neighbors)" placeholderTextColor="rgba(255,255,255,0.4)" />
+              </View>
+            )}
+
+            {node.type === 'box_cast' && (
+              <View style={styles.targetSection}>
+                <Text style={styles.targetLabel}>Origin: Active Element</Text>
+                <View style={{ flexDirection: 'row', gap: 4, marginBottom: 4 }}>
+                  <TextInput style={styles.valInput} value={node.props?.width?.toString() || ''} onChangeText={(t) => updateNodeProp('width', t)} placeholder="Width" placeholderTextColor="rgba(255,255,255,0.4)" keyboardType="numeric" />
+                  <TextInput style={styles.valInput} value={node.props?.height?.toString() || ''} onChangeText={(t) => updateNodeProp('height', t)} placeholder="Height" placeholderTextColor="rgba(255,255,255,0.4)" keyboardType="numeric" />
+                </View>
+                <TextInput style={styles.valInput} value={node.props?.saveKey || ''} onChangeText={(t) => updateNodeProp('saveKey', t)} placeholder="Save Array to Key" placeholderTextColor="rgba(255,255,255,0.4)" />
+              </View>
+            )}
+
+            {node.type === 'for_each_loop' && (
+              <View style={styles.targetSection}>
+                <Text style={styles.targetLabel}>Iterate Over Array:</Text>
+                <TextInput style={styles.valInput} value={node.props?.arrayKey || ''} onChangeText={(t) => updateNodeProp('arrayKey', t)} placeholder="Array Key (e.g. nearbyTiles)" placeholderTextColor="rgba(255,255,255,0.4)" />
+                <Text style={[styles.targetLabel, { marginTop: 4, color: '#48bea0' }]}>* Outputs to array items</Text>
+              </View>
+            )}
+
+            {node.type === 'if_else_block' && (
+              <View style={styles.targetSection}>
+                <Text style={styles.targetLabel}>Condition (Active Element):</Text>
+                <TextInput style={[styles.valInput, { marginBottom: 4 }]} value={node.props?.key || ''} onChangeText={(t) => updateNodeProp('key', t)} placeholder="State Key (e.g. isMine)" placeholderTextColor="rgba(255,255,255,0.4)" />
+                <View style={{ flexDirection: 'row', gap: 4 }}>
+                  <TouchableOpacity style={styles.opBtn} onPress={() => { setSelectedNodeId(node.id); setShowPicker(showPicker === 'cond' ? false : 'cond'); }}>
+                    <Text style={styles.targetBtnText}>{node.props?.cond || '=='}</Text>
+                  </TouchableOpacity>
+                  <TextInput style={styles.valInput} value={node.props?.val?.toString() || ''} onChangeText={(t) => updateNodeProp('val', t)} placeholder="Value" placeholderTextColor="rgba(255,255,255,0.4)" />
+                </View>
+                <Text style={[styles.targetLabel, { marginTop: 4, color: '#a064dc' }]}>* Continues ONLY if True</Text>
               </View>
             )}
 

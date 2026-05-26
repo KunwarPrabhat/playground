@@ -23,7 +23,11 @@ const BLUEPRINT_PRIMITIVES: PrimitiveType[] = [
   'set_canvas_text',
   'random_int',
   'set_instance_var',
-  'spawn_grid'
+  'spawn_grid',
+  'get_in_radius',
+  'box_cast',
+  'for_each_loop',
+  'if_else_block'
 ];
 
 const getIcon = (type: PrimitiveType) => {
@@ -46,6 +50,14 @@ const getIcon = (type: PrimitiveType) => {
       return <Feather name="database" size={size} color={color} />;
     case 'spawn_grid':
       return <Feather name="grid" size={size} color={color} />;
+    case 'get_in_radius':
+      return <Feather name="target" size={size} color={color} />;
+    case 'box_cast':
+      return <Feather name="maximize" size={size} color={color} />;
+    case 'for_each_loop':
+      return <Feather name="repeat" size={size} color={color} />;
+    case 'if_else_block':
+      return <Feather name="git-branch" size={size} color={color} />;
     case 'tile':
       return <Feather name="square" size={size} color={color} />;
     case 'text_element':
