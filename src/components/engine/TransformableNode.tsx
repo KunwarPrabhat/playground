@@ -10,6 +10,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { ElementNode } from '../../types/engineTypes';
 import { PrimitiveRenderer } from './primitives/PrimitiveRenderer';
 import { useEngine } from '../../context/EngineContext';
+import { useInterpreter } from '../../hooks/useInterpreter';
 
 interface Props {
   element: ElementNode;
@@ -19,6 +20,7 @@ const HANDLE_SIZE = 20;
 
 export const TransformableNode: React.FC<Props> = ({ element }) => {
   const { mode, updateElement, moveElementTree, selectedId, setSelectedId } = useEngine();
+  const { executeEvent } = useInterpreter();
 
   const isSelected = selectedId === element.id;
 
@@ -89,14 +91,14 @@ export const TransformableNode: React.FC<Props> = ({ element }) => {
           <TouchableWithoutFeedback
             onPress={() => {
               if (mode === 'play') {
-                console.log("[Engine Event] TAP on Element ID:", element.id);
+                executeEvent(element.id, 'tap');
               } else {
                 setSelectedId(element.id);
               }
             }}
             onLongPress={() => {
               if (mode === 'play') {
-                console.log("[Engine Event] LONG_PRESS on Element ID:", element.id);
+                executeEvent(element.id, 'long_press');
               }
             }}
           >
