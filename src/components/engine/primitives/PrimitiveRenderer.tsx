@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Keyboard } from 'react-native';
 import { PrimitiveType } from '../../../types/engineTypes';
 
 interface Props {
@@ -7,15 +7,18 @@ interface Props {
   width: number;
   height: number;
   instanceState?: Record<string, any>;
+  updateElement?: (updates: any) => void;
+  mode?: 'edit' | 'play';
+  isSelected?: boolean;
 }
 
-export const PrimitiveRenderer: React.FC<Props> = ({ type, width, height, instanceState }) => {
+export const PrimitiveRenderer: React.FC<Props> = ({ type, width, height, instanceState, updateElement, mode, isSelected }) => {
   const getBackgroundColor = () => {
     switch (type) {
       case 'grid': return 'rgba(107, 112, 92, 0.4)';
-      case 'tile': 
-        if (instanceState?.infected === 1) return '#e65a5a'; 
-        if (instanceState?.infected === 2) return '#48bea0'; 
+      case 'tile':
+        if (instanceState?.infected === 1) return '#e65a5a';
+        if (instanceState?.infected === 2) return '#48bea0';
         return 'rgba(255, 255, 255, 0.2)';
       default: return 'rgba(255, 255, 255, 0.5)';
     }
@@ -65,60 +68,47 @@ export const PrimitiveRenderer: React.FC<Props> = ({ type, width, height, instan
   }
 
   if (type === 'grid') {
-    const cellSize = 32;
-    const cols = Math.max(1, Math.floor(width / cellSize));
-    const rows = Math.max(1, Math.floor(height / cellSize));
-
+    const mRows = instanceState?.matrix?.length || Math.max(1, Math.floor(height / 32));
+    const mCols = instanceState?.matrix?.[0]?.length || Math.max(1, Math.floor(width / 32));
     return (
-      <View
-        style={[
-          styles.container,
-          {
-            width,
-            height,
-            backgroundColor: getBackgroundColor(),
-            borderColor: getBorderColor(),
-            borderWidth: 2,
-            padding: 2,
-            flexDirection: 'column',
-          },
-        ]}
-      >
-        {Array.from({ length: rows }).map((_, r) => (
+      <View style={[styles.container, { width, height, backgroundColor: '#0B0E14', borderColor: '#00f0ff', borderWidth: 2, padding: 2, flexDirection: 'column', shadowColor: '#00f0ff', shadowOpacity: 0.5, shadowRadius: 10, elevation: 5 }]}>
+        {Array.from({ length: mRows }).map((_, r) => (
           <View key={r} style={{ flexDirection: 'row', flex: 1 }}>
-            {Array.from({ length: cols }).map((_, c) => (
-              <View
-                key={c}
-                style={{
-                  flex: 1,
-                  borderWidth: 1,
-                  borderColor: 'rgba(255, 255, 255, 0.15)',
-                  margin: 1,
-                  borderRadius: 2,
-                }}
-              />
-            ))}
+            {Array.from({ length: mCols }).map((_, c) => {
+              const val = instanceState?.matrix?.[r]?.[c] || 0;
+              const cellColor = val === 1 ? '#00f0ff' : val === -1 ? '#ff0055' : 'transparent';
+              return (
+                <View key={c} style={{ flex: 1, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.4)', backgroundColor: cellColor, margin: 1, borderRadius: 2 }} />
+              );
+            })}
           </View>
         ))}
       </View>
     );
   }
 
+  if (type === 'text_element') {
+    return (
+      <View style={[styles.container, { width, height, backgroundColor: 'transparent', borderWidth: mode === 'edit' ? 1 : 0, borderColor: 'rgba(255,255,255,0.2)', padding: 10 }]}>
+         <View pointerEvents={isSelected ? "auto" : "none"} style={{ flex: 1 }}>
+           <TextInput 
+             style={{ color: '#fff', fontSize: 16, width: '100%', height: '100%', textAlign: 'center' }}
+             value={instanceState?.text || ''}
+             placeholder={mode === 'edit' ? "Double Tap to Type..." : ""}
+             placeholderTextColor="rgba(255,255,255,0.3)"
+             onChangeText={(t) => updateElement && updateElement({ instanceState: { ...instanceState, text: t } })}
+             editable={isSelected && mode === 'edit'}
+             onBlur={() => Keyboard.dismiss()}
+             multiline
+           />
+         </View>
+      </View>
+    );
+  }
+
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          width,
-          height,
-          backgroundColor: getBackgroundColor(),
-          borderColor: getBorderColor(),
-        },
-      ]}
-    >
-      <Text style={styles.title} numberOfLines={1} adjustsFontSizeToFit>
-        {formatTitle(type)}
-      </Text>
+    <View style={[styles.container, { width, height, backgroundColor: getBackgroundColor(), borderColor: getBorderColor() }]}>
+      <Text style={styles.title} numberOfLines={1} adjustsFontSizeToFit>{formatTitle(type)}</Text>
     </View>
   );
 };

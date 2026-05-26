@@ -24,6 +24,8 @@ interface EngineContextType {
   removeGlobalVariable: (id: string) => void;
   updateElementState: (id: string, key: string, value: any) => void;
   bulkAddElements: (newElements: ElementNode[]) => void;
+  loadEngineState: (elements: any[], globals: any[]) => void;
+  clearEngineState: () => void;
 }
 
 const EngineContext = createContext<EngineContextType | undefined>(undefined);
@@ -125,6 +127,16 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setElements((prev) => [...prev, ...newElements]);
   }, []);
 
+  const loadEngineState = useCallback((newElements: any[], newGlobals: any[]) => {
+    setElements(newElements);
+    setGlobalVariables(newGlobals);
+  }, []);
+
+  const clearEngineState = useCallback(() => {
+    setElements([]);
+    setGlobalVariables([]);
+  }, []);
+
   return (
     <EngineContext.Provider
       value={{
@@ -148,7 +160,9 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         updateGlobalVariable,
         removeGlobalVariable,
         updateElementState,
-        bulkAddElements
+        bulkAddElements,
+        loadEngineState,
+        clearEngineState
       }}
     >
       {children}

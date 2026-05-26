@@ -213,6 +213,9 @@ export const LogicNodeUI: React.FC<Props> = ({ node }) => {
       case 'box_cast': return { bg: 'rgba(230, 120, 90, 0.8)', border: '#e6785a' };
       case 'for_each_loop': return { bg: 'rgba(72, 190, 160, 0.8)', border: '#48bea0' };
       case 'if_else_block': return { bg: 'rgba(160, 100, 220, 0.8)', border: '#a064dc' };
+      case 'init_matrix':
+      case 'set_matrix_cell':
+      case 'get_matrix_cell': return { bg: 'rgba(212, 163, 115, 0.8)', border: '#d4a373' };
       default: return { bg: 'rgba(255, 255, 255, 0.5)', border: '#ccc' };
     }
   };
@@ -294,7 +297,7 @@ export const LogicNodeUI: React.FC<Props> = ({ node }) => {
             {node.type === 'spawn_grid' && (
               <View style={styles.targetSection}>
                 <Text style={styles.targetLabel}>Template Element:</Text>
-                <TouchableOpacity style={[styles.targetBtn, {marginBottom: 4}]} onPress={() => { setSelectedNodeId(node.id); setShowPicker(showPicker === 'targetSceneId' ? false : 'targetSceneId'); }}>
+                <TouchableOpacity style={[styles.targetBtn, { marginBottom: 4 }]} onPress={() => { setSelectedNodeId(node.id); setShowPicker(showPicker === 'targetSceneId' ? false : 'targetSceneId'); }}>
                   <Text style={styles.targetBtnText} numberOfLines={1}>{node.targetSceneId ? (elements.find(e => e.id === node.targetSceneId)?.name || node.targetSceneId) : 'Select Element'}</Text>
                   <Feather name="chevron-down" size={12} color="#fff" />
                 </TouchableOpacity>
@@ -306,6 +309,50 @@ export const LogicNodeUI: React.FC<Props> = ({ node }) => {
                   <TextInput style={styles.valInput} value={node.props?.gapX?.toString() || ''} onChangeText={(t) => updateNodeProp('gapX', t)} placeholder="Gap X" placeholderTextColor="rgba(255,255,255,0.4)" keyboardType="numeric" />
                   <TextInput style={styles.valInput} value={node.props?.gapY?.toString() || ''} onChangeText={(t) => updateNodeProp('gapY', t)} placeholder="Gap Y" placeholderTextColor="rgba(255,255,255,0.4)" keyboardType="numeric" />
                 </View>
+              </View>
+            )}
+
+            {node.type === 'init_matrix' && (
+              <View style={styles.targetSection}>
+                <Text style={styles.targetLabel}>Target Canvas ID:</Text>
+                <TouchableOpacity style={[styles.targetBtn, {marginBottom: 4}]} onPress={() => { setSelectedNodeId(node.id); setShowPicker(showPicker === 'targetSceneId' ? false : 'targetSceneId'); }}>
+                  <Text style={styles.targetBtnText} numberOfLines={1}>{node.targetSceneId ? (elements.find(e => e.id === node.targetSceneId)?.name || node.targetSceneId) : 'Select Element'}</Text>
+                  <Feather name="chevron-down" size={12} color="#fff" />
+                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', gap: 4 }}>
+                  <TextInput style={styles.valInput} value={node.props?.rows?.toString() || ''} onChangeText={(t) => updateNodeProp('rows', t)} placeholder="Rows" placeholderTextColor="rgba(255,255,255,0.4)" keyboardType="numeric" />
+                  <TextInput style={styles.valInput} value={node.props?.cols?.toString() || ''} onChangeText={(t) => updateNodeProp('cols', t)} placeholder="Cols" placeholderTextColor="rgba(255,255,255,0.4)" keyboardType="numeric" />
+                </View>
+              </View>
+            )}
+
+            {node.type === 'set_matrix_cell' && (
+              <View style={styles.targetSection}>
+                <Text style={styles.targetLabel}>Target Canvas ID:</Text>
+                <TouchableOpacity style={[styles.targetBtn, {marginBottom: 4}]} onPress={() => { setSelectedNodeId(node.id); setShowPicker(showPicker === 'targetSceneId' ? false : 'targetSceneId'); }}>
+                  <Text style={styles.targetBtnText} numberOfLines={1}>{node.targetSceneId ? (elements.find(e => e.id === node.targetSceneId)?.name || node.targetSceneId) : 'Select Element'}</Text>
+                  <Feather name="chevron-down" size={12} color="#fff" />
+                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', gap: 4, marginBottom: 4 }}>
+                  <TextInput style={styles.valInput} value={node.props?.row?.toString() || ''} onChangeText={(t) => updateNodeProp('row', t)} placeholder="Row" placeholderTextColor="rgba(255,255,255,0.4)" keyboardType="numeric" />
+                  <TextInput style={styles.valInput} value={node.props?.col?.toString() || ''} onChangeText={(t) => updateNodeProp('col', t)} placeholder="Col" placeholderTextColor="rgba(255,255,255,0.4)" keyboardType="numeric" />
+                </View>
+                <TextInput style={styles.valInput} value={node.props?.val?.toString() || ''} onChangeText={(t) => updateNodeProp('val', t)} placeholder="Value" placeholderTextColor="rgba(255,255,255,0.4)" />
+              </View>
+            )}
+
+            {node.type === 'get_matrix_cell' && (
+              <View style={styles.targetSection}>
+                <Text style={styles.targetLabel}>Target Canvas ID:</Text>
+                <TouchableOpacity style={[styles.targetBtn, {marginBottom: 4}]} onPress={() => { setSelectedNodeId(node.id); setShowPicker(showPicker === 'targetSceneId' ? false : 'targetSceneId'); }}>
+                  <Text style={styles.targetBtnText} numberOfLines={1}>{node.targetSceneId ? (elements.find(e => e.id === node.targetSceneId)?.name || node.targetSceneId) : 'Select Element'}</Text>
+                  <Feather name="chevron-down" size={12} color="#fff" />
+                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', gap: 4, marginBottom: 4 }}>
+                  <TextInput style={styles.valInput} value={node.props?.row?.toString() || ''} onChangeText={(t) => updateNodeProp('row', t)} placeholder="Row" placeholderTextColor="rgba(255,255,255,0.4)" keyboardType="numeric" />
+                  <TextInput style={styles.valInput} value={node.props?.col?.toString() || ''} onChangeText={(t) => updateNodeProp('col', t)} placeholder="Col" placeholderTextColor="rgba(255,255,255,0.4)" keyboardType="numeric" />
+                </View>
+                <TextInput style={styles.valInput} value={node.props?.saveKey || ''} onChangeText={(t) => updateNodeProp('saveKey', t)} placeholder="Save Val to Key" placeholderTextColor="rgba(255,255,255,0.4)" />
               </View>
             )}
 

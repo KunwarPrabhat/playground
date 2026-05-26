@@ -40,6 +40,8 @@ interface BlueprintContextType {
   activeDragId: SharedValue<string | null>;
   activeDragDeltaX: SharedValue<number>;
   activeDragDeltaY: SharedValue<number>;
+  loadBlueprintState: (nodes: any[], wires: any[]) => void;
+  clearBlueprintState: () => void;
 }
 
 const BlueprintContext = createContext<BlueprintContextType | undefined>(undefined);
@@ -88,6 +90,22 @@ export const BlueprintProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const removeIncomingWires = useCallback((nodeId: string) => {
     setWires((prev) => prev.filter((w) => w.toNodeId !== nodeId));
   }, []);
+
+  const loadBlueprintState = useCallback((newNodes: any[], newWires: any[]) => {
+    setNodes(newNodes);
+    setWires(newWires);
+  }, []);
+
+  const clearBlueprintState = useCallback(() => {
+    setNodes([]);
+    setWires([]);
+    setSelectedNodeId(null);
+    setDraftWire(null);
+    activeDragId.value = null;
+    activeDragDeltaX.value = 0;
+    activeDragDeltaY.value = 0;
+  }, []);
+
   return (
     <BlueprintContext.Provider
       value={{
@@ -110,7 +128,9 @@ export const BlueprintProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         removeIncomingWires,
         activeDragId,
         activeDragDeltaX,
-        activeDragDeltaY
+        activeDragDeltaY,
+        loadBlueprintState,
+        clearBlueprintState
       }}
     >
       {children}

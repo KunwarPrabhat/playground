@@ -16,7 +16,10 @@ export type PrimitiveType =
   | 'get_in_radius'
   | 'box_cast'
   | 'for_each_loop'
-  | 'if_else_block';
+  | 'if_else_block'
+  | 'init_matrix'
+  | 'set_matrix_cell'
+  | 'get_matrix_cell';
 
 export type GridSnap = 'off' | 8 | 16 | 32;
 

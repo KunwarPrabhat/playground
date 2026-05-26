@@ -42,12 +42,13 @@ export const TransformableNode: React.FC<Props> = ({ element }) => {
   };
 
   const panGesture = Gesture.Pan()
-  .enabled(mode === 'edit')
+    .enabled(mode === 'edit')
     .onUpdate((e) => {
       const rawX = element.x + e.translationX;
       const rawY = element.y + e.translationY;
-      translateX.value = Math.round(rawX / 40) * 40;
-      translateY.value = Math.round(rawY / 40) * 40;
+      const shouldSnap = element.type !== 'text_element';
+      translateX.value = shouldSnap ? Math.round(rawX / 40) * 40 : rawX;
+      translateY.value = shouldSnap ? Math.round(rawY / 40) * 40 : rawY;
     })
     .onEnd(() => {
       const sx = translateX.value;
@@ -60,12 +61,13 @@ export const TransformableNode: React.FC<Props> = ({ element }) => {
     });
 
   const resizeGesture = Gesture.Pan()
-  .enabled(mode === 'edit')
+    .enabled(mode === 'edit')
     .onUpdate((e) => {
       const rawW = element.w + e.translationX;
       const rawH = element.h + e.translationY;
-      width.value = Math.max(40, Math.round(rawW / 40) * 40);
-      height.value = Math.max(40, Math.round(rawH / 40) * 40);
+      const shouldSnapR = element.type !== 'text_element';
+      width.value = shouldSnapR ? Math.max(40, Math.round(rawW / 40) * 40) : Math.max(40, rawW);
+      height.value = shouldSnapR ? Math.max(40, Math.round(rawH / 40) * 40) : Math.max(40, rawH);
     })
     .onEnd(() => {
       const sw = width.value;
@@ -103,7 +105,7 @@ export const TransformableNode: React.FC<Props> = ({ element }) => {
             }}
           >
             <View style={StyleSheet.absoluteFill}>
-              <PrimitiveRenderer type={element.type} width={element.w} height={element.h} instanceState={element.instanceState} />
+              <PrimitiveRenderer type={element.type} width={element.w} height={element.h} instanceState={element.instanceState} updateElement={(updates) => updateElement(element.id, updates)} mode={mode} isSelected={isSelected} />
               {isSelected && (
                 <View style={styles.selectionBorder} pointerEvents="none" />
               )}
@@ -130,7 +132,7 @@ const styles = StyleSheet.create({
   selectionBorder: {
     ...StyleSheet.absoluteFillObject,
     borderWidth: 2,
-    borderColor: '#cb997e', 
+    borderColor: '#cb997e',
     borderRadius: 8,
     borderStyle: 'dashed',
   },

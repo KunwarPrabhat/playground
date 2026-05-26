@@ -1,25 +1,65 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, Text, TouchableOpacity, Alert } from 'react-native';
 import { EngineProvider, useEngine } from '../context/EngineContext';
 import { SidebarLibrary } from '../components/engine/SidebarLibrary';
 import { CanvasWorkspace } from '../components/engine/CanvasWorkspace';
 import { HierarchyPanel } from '../components/engine/HierarchyPanel';
 import { BlueprintWorkspace } from '../components/engine/BlueprintWorkspace';
 import { GlobalStatePanel } from '../components/engine/GlobalStatePanel';
-import { BlueprintProvider } from '../context/BlueprintContext';
+import { BlueprintProvider, useBlueprint } from '../context/BlueprintContext';
 import { Feather } from '@expo/vector-icons';
+import * as ProjectManager from '../utils/ProjectManager';
 
-const EngineInterface: React.FC = () => {
-  const { mode, setMode, elements, selectedId, deleteElement } = useEngine();
+interface EngineInterfaceProps {
+  projectId: string;
+  projectName: string;
+  onExit: () => void;
+}
+
+const EngineInterface: React.FC<EngineInterfaceProps> = ({ projectId, projectName, onExit }) => {
+  const { mode, setMode, elements, selectedId, deleteElement, loadEngineState, clearEngineState, globalVariables } = useEngine();
+  const { nodes, wires, loadBlueprintState, clearBlueprintState } = useBlueprint();
   const [showLibrary, setShowLibrary] = useState(false);
   const [showHierarchy, setShowHierarchy] = useState(false);
   const [activeTab, setActiveTab] = useState<'scene' | 'blueprint' | 'global_state'>('scene');
+
+  useEffect(() => {
+    if (projectId) {
+      ProjectManager.loadProject(projectId).then((proj) => {
+        if (proj) {
+          loadEngineState(proj.engineData?.elements || [], proj.engineData?.globalVariables || []);
+          loadBlueprintState(proj.blueprintData?.nodes || [], proj.blueprintData?.wires || []);
+        }
+      });
+    } else {
+      clearEngineState();
+      clearBlueprintState();
+    }
+  }, [projectId]);
+
+  const handleSave = () => {
+    ProjectManager.saveProject({
+      id: projectId,
+      name: projectName,
+      lastModified: Date.now(),
+      engineData: { elements, globalVariables },
+      blueprintData: { nodes, wires }
+    }).then(() => {
+      Alert.alert('Saved', 'Project saved successfully!');
+    }).catch((err) => {
+      Alert.alert('Error', 'Failed to save project.');
+      console.error(err);
+    });
+  };
 
   if (mode === 'play') {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>Make2D: Sim</Text>
+          <TouchableOpacity onPress={onExit} style={styles.backBtn}>
+            <Feather name="arrow-left" size={20} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.title}>{projectName} (Play)</Text>
           <TouchableOpacity onPress={() => setMode('edit')} style={styles.modeBtn}>
             <Feather name="square" size={16} color="#cb997e" />
           </TouchableOpacity>
@@ -32,6 +72,10 @@ const EngineInterface: React.FC = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
+        <TouchableOpacity onPress={onExit} style={styles.backBtn}>
+          <Feather name="arrow-left" size={20} color="#fff" />
+        </TouchableOpacity>
+        
         <View style={styles.tabToggle}>
           <TouchableOpacity
             style={[styles.tabBtn, activeTab === 'scene' && styles.tabBtnActive]}
@@ -68,6 +112,9 @@ const EngineInterface: React.FC = () => {
               <Feather name="box" size={16} color="#fff" />
             </TouchableOpacity>
           )}
+          <TouchableOpacity onPress={handleSave} style={styles.modeBtn}>
+            <Feather name="save" size={16} color="#fff" />
+          </TouchableOpacity>
           <TouchableOpacity onPress={() => setMode('play')} style={styles.modeBtn}>
             <Feather name="play" size={16} color="#71a071" />
           </TouchableOpacity>
@@ -103,11 +150,17 @@ const EngineInterface: React.FC = () => {
   );
 };
 
-export const MakerScreen = () => {
+interface MakerScreenProps {
+  projectId: string;
+  projectName: string;
+  onExit: () => void;
+}
+
+export const MakerScreen: React.FC<MakerScreenProps> = ({ projectId, projectName, onExit }) => {
   return (
     <EngineProvider>
       <BlueprintProvider>
-        <EngineInterface />
+        <EngineInterface projectId={projectId} projectName={projectName} onExit={onExit} />
       </BlueprintProvider>
     </EngineProvider>
   );
@@ -130,6 +183,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     zIndex: 10,
   },
+  backBtn: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+  },
   tabToggle: {
     flexDirection: 'row',
     backgroundColor: 'rgba(0,0,0,0.4)',
@@ -137,7 +195,7 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   tabBtn: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
   },
@@ -155,19 +213,21 @@ const styles = StyleSheet.create({
   title: {
     color: '#ddbea9',
     fontWeight: '900',
-    fontSize: 18,
+    fontSize: 16,
     letterSpacing: 1.2,
+    flex: 1,
+    marginLeft: 12,
   },
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
   },
   modeBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.1)',
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 8,
     borderRadius: 8,
   },

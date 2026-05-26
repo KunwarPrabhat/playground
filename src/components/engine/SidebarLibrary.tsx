@@ -27,7 +27,10 @@ const BLUEPRINT_PRIMITIVES: PrimitiveType[] = [
   'get_in_radius',
   'box_cast',
   'for_each_loop',
-  'if_else_block'
+  'if_else_block',
+  'init_matrix',
+  'set_matrix_cell',
+  'get_matrix_cell'
 ];
 
 const getIcon = (type: PrimitiveType) => {
@@ -62,6 +65,12 @@ const getIcon = (type: PrimitiveType) => {
       return <Feather name="square" size={size} color={color} />;
     case 'text_element':
       return <Feather name="type" size={size} color={color} />;
+    case 'init_matrix':
+      return <Feather name="grid" size={size} color={color} />;
+    case 'set_matrix_cell':
+      return <Feather name="edit" size={size} color={color} />;
+    case 'get_matrix_cell':
+      return <Feather name="crosshair" size={size} color={color} />;
     default:
       return <Feather name="help-circle" size={size} color={color} />;
   }
@@ -80,7 +89,7 @@ export const SidebarLibrary: React.FC<Props> = ({ mode }) => {
     // 40px grid aligned sizes
     const w = type === 'grid' ? 160 : (type === 'spawner_marker' ? 40 : 80);
     const h = type === 'grid' ? 160 : (type === 'spawner_marker' ? 40 : 80);
-    
+
     // Compute current screen center in canvas-space
     let currentPanX = mode === 'scene' ? panX.value : bpPanX.value;
     let currentPanY = mode === 'scene' ? panY.value : bpPanY.value;

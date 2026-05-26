@@ -148,7 +148,46 @@ export const useInterpreter = () => {
             innerWires.forEach((w) => traverse(w.toNodeId, targetId));
           });
         }
-        return;
+      } else if (targetNode.type === 'init_matrix') {
+        const targetId = targetNode.targetSceneId;
+        if (targetId) {
+          const rows = parseInt(targetNode.props?.rows) || 1;
+          const cols = parseInt(targetNode.props?.cols) || 1;
+          const newMatrix = Array.from({ length: rows }, () => Array(cols).fill(0));
+          updateElementState(targetId, 'matrix', newMatrix);
+          console.log(`[Interpreter] init_matrix on [${targetId}] with ${rows}x${cols} grid.`);
+        }
+      } else if (targetNode.type === 'set_matrix_cell') {
+        const targetId = targetNode.targetSceneId;
+        const targetEl = elements.find(e => e.id === targetId);
+        if (targetId && targetEl) {
+          const row = parseInt(targetNode.props?.row) || 0;
+          const col = parseInt(targetNode.props?.col) || 0;
+          const val = parseInt(targetNode.props?.val) || 0;
+          const currentMatrix = targetEl.instanceState?.matrix;
+          if (Array.isArray(currentMatrix)) {
+            const updatedMatrix = currentMatrix.map(r => [...r]);
+            if (updatedMatrix[row]) {
+              updatedMatrix[row][col] = val;
+              updateElementState(targetId, 'matrix', updatedMatrix);
+              console.log(`[Interpreter] set_matrix_cell on [${targetId}] at [${row}, ${col}] = ${val}`);
+            }
+          }
+        }
+      } else if (targetNode.type === 'get_matrix_cell') {
+        const targetId = targetNode.targetSceneId;
+        const targetEl = elements.find(e => e.id === targetId);
+        if (targetId && targetEl) {
+          const row = parseInt(targetNode.props?.row) || 0;
+          const col = parseInt(targetNode.props?.col) || 0;
+          const saveKey = targetNode.props?.saveKey;
+          const currentMatrix = targetEl.instanceState?.matrix;
+          if (Array.isArray(currentMatrix) && currentMatrix[row] && saveKey) {
+            const cellVal = currentMatrix[row][col];
+            updateElementState(activeElementId, saveKey, cellVal);
+            console.log(`[Interpreter] get_matrix_cell on [${targetId}] at [${row}, ${col}] = ${cellVal}. Saved to Active Element Key [${saveKey}].`);
+          }
+        }
       }
 
       traverse(targetNode.id, activeElementId);
