@@ -103,7 +103,7 @@ export const TransformableNode: React.FC<Props> = ({ element }) => {
             }}
           >
             <View style={StyleSheet.absoluteFill}>
-              <PrimitiveRenderer type={element.type} width={element.w} height={element.h} />
+              <PrimitiveRenderer type={element.type} width={element.w} height={element.h} instanceState={element.instanceState} />
               {isSelected && (
                 <View style={styles.selectionBorder} pointerEvents="none" />
               )}
@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
   selectionBorder: {
     ...StyleSheet.absoluteFillObject,
     borderWidth: 2,
-    borderColor: '#cb997e', // Highlight color
+    borderColor: '#cb997e', 
     borderRadius: 8,
     borderStyle: 'dashed',
   },

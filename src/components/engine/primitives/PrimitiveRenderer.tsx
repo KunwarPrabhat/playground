@@ -6,12 +6,17 @@ interface Props {
   type: PrimitiveType;
   width: number;
   height: number;
+  instanceState?: Record<string, any>;
 }
 
-export const PrimitiveRenderer: React.FC<Props> = ({ type, width, height }) => {
+export const PrimitiveRenderer: React.FC<Props> = ({ type, width, height, instanceState }) => {
   const getBackgroundColor = () => {
     switch (type) {
-      case 'grid': return 'rgba(107, 112, 92, 0.4)'; 
+      case 'grid': return 'rgba(107, 112, 92, 0.4)';
+      case 'tile': 
+        if (instanceState?.infected === 1) return '#e65a5a'; 
+        if (instanceState?.infected === 2) return '#48bea0'; 
+        return 'rgba(255, 255, 255, 0.2)';
       default: return 'rgba(255, 255, 255, 0.5)';
     }
   };
@@ -19,6 +24,10 @@ export const PrimitiveRenderer: React.FC<Props> = ({ type, width, height }) => {
   const getBorderColor = () => {
     switch (type) {
       case 'grid': return '#6b705c';
+      case 'tile':
+        if (instanceState?.infected === 1) return '#ff7b7b';
+        if (instanceState?.infected === 2) return '#5cf2cc';
+        return '#ccc';
       default: return '#ccc';
     }
   };
@@ -34,6 +43,23 @@ export const PrimitiveRenderer: React.FC<Props> = ({ type, width, height }) => {
         <View style={styles.spawnerCrosshairH} />
         <View style={styles.spawnerCrosshairV} />
         <View style={styles.spawnerCenterDot} />
+      </View>
+    );
+  }
+
+  if (type === 'tile') {
+    const owner = instanceState?.owner || 0;
+    const mass = instanceState?.mass || 0;
+    const color = owner === 1 ? '#ff4d4d' : owner === -1 ? '#48bea0' : 'rgba(255, 255, 255, 0.1)';
+    const borderColor = owner === 1 ? '#ff7b7b' : owner === -1 ? '#5cf2cc' : 'rgba(255,255,255,0.3)';
+
+    return (
+      <View style={[styles.container, { width, height, backgroundColor: 'rgba(0,0,0,0.5)', borderColor, borderWidth: owner !== 0 ? 2 : 1 }]}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: 4, padding: 8 }}>
+          {Array.from({ length: Math.min(mass, 4) }).map((_, i) => (
+            <View key={i} style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: color, shadowColor: color, shadowOpacity: 1, shadowRadius: 8, elevation: 5 }} />
+          ))}
+        </View>
       </View>
     );
   }

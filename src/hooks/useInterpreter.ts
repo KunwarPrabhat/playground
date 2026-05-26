@@ -46,7 +46,10 @@ export const useInterpreter = () => {
           const key = targetNode.props?.key;
           if (key) {
             const currentVal = activeEl.instanceState?.[key];
-            const newVal = applyOp(currentVal, targetNode.props?.val, targetNode.props?.op || '=');
+            const rawVal = targetNode.props?.val;
+            const gVar = globalVariables.find(v => v.name === rawVal);
+            const valToUse = gVar ? gVar.value : rawVal;
+            const newVal = applyOp(currentVal, valToUse, targetNode.props?.op || '=');
             updateElementState(activeElementId, key, newVal);
             console.log(`[Interpreter] Set Instance Var [${key}] on element [${activeEl.name}] from ${currentVal} to ${newVal}`);
           }
@@ -72,6 +75,7 @@ export const useInterpreter = () => {
               newElements.push({
                 ...template,
                 id: newId,
+                targetId: template.id,
                 name: `${template.name}_${r}_${c}`,
                 x: newX,
                 y: newY,
@@ -154,15 +158,16 @@ export const useInterpreter = () => {
   const executeEvent = useCallback((targetElementId: string, eventType: 'tap' | 'long_press') => {
     console.log(`[Interpreter] Event triggered: ${eventType.toUpperCase()} on Element ID: ${targetElementId}`);
 
+    const activeEl = elements.find(e => e.id === targetElementId);
     const startingNodes = nodes.filter(
-      (n) => n.type === 'on_interact' && n.targetSceneId === targetElementId
+      (n) => n.type === 'on_interact' && (n.targetSceneId === targetElementId || n.targetSceneId === activeEl?.targetId)
     );
 
     startingNodes.forEach((node) => {
       console.log(`[Interpreter] Starting execution from node: ${node.id}`);
       traverse(node.id, targetElementId);
     });
-  }, [nodes, traverse]);
+  }, [nodes, elements, traverse]);
 
   return { executeEvent };
 };
