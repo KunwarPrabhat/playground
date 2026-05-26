@@ -36,7 +36,7 @@ interface BlueprintContextType {
   draftWire: { startX: number; startY: number; endX: number; endY: number } | null;
   setDraftWire: (wire: { startX: number; startY: number; endX: number; endY: number } | null) => void;
   deleteLogicNode: (id: string) => void;
-
+  removeIncomingWires: (nodeId: string) => void;
   activeDragId: SharedValue<string | null>;
   activeDragDeltaX: SharedValue<number>;
   activeDragDeltaY: SharedValue<number>;
@@ -73,7 +73,6 @@ export const BlueprintProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const addWire = useCallback((wire: Wire) => {
     console.log("[BlueprintContext] ADDING WIRE:", wire);
     setWires((prev) => {
-      // Avoid duplicate connections between same nodes
       const exists = prev.some(w => w.fromNodeId === wire.fromNodeId && w.toNodeId === wire.toNodeId);
       if (exists) return prev;
       return [...prev, wire];
@@ -86,6 +85,9 @@ export const BlueprintProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setWires((prev) => prev.filter((w) => w.fromNodeId !== id && w.toNodeId !== id));
   }, []);
 
+  const removeIncomingWires = useCallback((nodeId: string) => {
+    setWires((prev) => prev.filter((w) => w.toNodeId !== nodeId));
+  }, []);
   return (
     <BlueprintContext.Provider
       value={{
@@ -105,6 +107,7 @@ export const BlueprintProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         draftWire,
         setDraftWire,
         deleteLogicNode,
+        removeIncomingWires,
         activeDragId,
         activeDragDeltaX,
         activeDragDeltaY

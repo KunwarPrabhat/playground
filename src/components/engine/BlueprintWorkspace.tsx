@@ -79,7 +79,7 @@ export const BlueprintWorkspace: React.FC = () => {
       lastSafeFocalX.value = e.focalX;
       lastSafeFocalY.value = e.focalY;
 
-      const newScale = Math.max(0.5, Math.min(3, pinchStartScale.value * e.scale));
+      const newScale = Math.max(0.2, Math.min(3, pinchStartScale.value * e.scale));
       scale.value = newScale;
       const k = newScale / pinchStartScale.value;
 

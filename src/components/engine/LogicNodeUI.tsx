@@ -12,7 +12,12 @@ interface Props {
 }
 
 export const LogicNodeUI: React.FC<Props> = ({ node }) => {
-  const { nodes, addWire, updateLogicNode, updateLogicNodeTarget, selectedNodeId, setSelectedNodeId, scale, setDraftWire, deleteLogicNode, activeDragId, activeDragDeltaX, activeDragDeltaY } = useBlueprint();
+  const {
+    nodes, wires, addWire, updateLogicNode, updateLogicNodeTarget,
+    selectedNodeId, setSelectedNodeId, scale, setDraftWire, deleteLogicNode,
+    activeDragId, activeDragDeltaX, activeDragDeltaY, removeIncomingWires
+  } = useBlueprint();
+
   const { elements, globalVariables } = useEngine();
   const [showPicker, setShowPicker] = useState<string | false>(false);
 
@@ -34,6 +39,62 @@ export const LogicNodeUI: React.FC<Props> = ({ node }) => {
 
   const commitChanges = (x: number, y: number) => {
     updateLogicNode(node.id, { x, y });
+  };
+
+  const detachStartX = useSharedValue(0);
+  const detachStartY = useSharedValue(0);
+  const detachSourceId = useSharedValue<string | null>(null);
+
+  const handleDetachStart = () => {
+    const incoming = wires.find(w => w.toNodeId === node.id);
+    if (incoming) {
+      const sourceNode = nodes.find(n => n.id === incoming.fromNodeId);
+      if (sourceNode) {
+        removeIncomingWires(node.id);
+        const sx = sourceNode.x + 180;
+        const sy = sourceNode.y + (sourceNode.height ? sourceNode.height / 2 : 55);
+        detachStartX.value = sx;
+        detachStartY.value = sy;
+        detachSourceId.value = sourceNode.id;
+        setDraftWire({ startX: sx, startY: sy, endX: node.x, endY: node.y + nodeCenterY });
+      }
+    }
+  };
+
+  const handleDetachUpdate = (tx: number, ty: number) => {
+    if (detachSourceId.value) {
+      setDraftWire({
+        startX: detachStartX.value,
+        startY: detachStartY.value,
+        endX: node.x + tx,
+        endY: node.y + nodeCenterY + ty
+      });
+    }
+  };
+
+  const handleDetachEnd = (tx: number, ty: number) => {
+    if (detachSourceId.value) {
+      const dropX = node.x + tx;
+      const dropY = node.y + nodeCenterY + ty;
+      const sourceId = detachSourceId.value;
+
+      setDraftWire(null);
+      detachSourceId.value = null;
+
+      for (const targetNode of nodes) {
+        if (targetNode.id === sourceId) continue;
+        const pinX = targetNode.x;
+        const pinY = targetNode.y + (targetNode.height ? targetNode.height / 2 : 55);
+        if (Math.hypot(pinX - dropX, pinY - dropY) < 120) {
+          addWire({
+            id: Math.random().toString(36).substring(7),
+            fromNodeId: sourceId,
+            toNodeId: targetNode.id
+          });
+          break;
+        }
+      }
+    }
   };
 
   const nodePanGesture = Gesture.Pan()
@@ -103,7 +164,12 @@ export const LogicNodeUI: React.FC<Props> = ({ node }) => {
 
       runOnJS(setDraftWire)(null);
       runOnJS(handleConnectWire)(dropX, dropY);
-    });
+    }
+    );
+  const leftPinPanGesture = Gesture.Pan()
+    .onStart(() => runOnJS(handleDetachStart)())
+    .onUpdate((e) => runOnJS(handleDetachUpdate)(e.translationX / scale.value, e.translationY / scale.value))
+    .onEnd((e) => runOnJS(handleDetachEnd)(e.translationX / scale.value, e.translationY / scale.value));
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
@@ -155,6 +221,12 @@ export const LogicNodeUI: React.FC<Props> = ({ node }) => {
           <View style={[StyleSheet.absoluteFillObject, { justifyContent: 'center', pointerEvents: 'none' }]}>
             <View style={[styles.pin, { left: -6 }]} />
           </View>
+          <View style={[StyleSheet.absoluteFillObject, { justifyContent: 'center' }]} pointerEvents="box-none">
+            <GestureDetector gesture={leftPinPanGesture}>
+              <View style={[styles.pin, { left: -6 }]} hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }} />
+            </GestureDetector>
+          </View>
+
           <View style={[StyleSheet.absoluteFillObject, { justifyContent: 'center' }]} pointerEvents="box-none">
             <GestureDetector gesture={wirePanGesture}>
               <View style={[styles.pin, { right: -6 }]} hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }} />
