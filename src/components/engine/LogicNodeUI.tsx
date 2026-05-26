@@ -207,6 +207,7 @@ export const LogicNodeUI: React.FC<Props> = ({ node }) => {
       case 'compare_state': return { bg: 'rgba(183, 183, 164, 0.8)', border: '#b7b7a4' };
       case 'set_canvas_text': return { bg: 'rgba(221, 190, 169, 0.8)', border: '#ddbea9' };
       case 'random_int': return { bg: 'rgba(100, 150, 200, 0.8)', border: '#6496c8' };
+      case 'set_instance_var': return { bg: 'rgba(155, 100, 200, 0.8)', border: '#9b64c8' };
       default: return { bg: 'rgba(255, 255, 255, 0.5)', border: '#ccc' };
     }
   };
@@ -264,6 +265,19 @@ export const LogicNodeUI: React.FC<Props> = ({ node }) => {
                   <Feather name="chevron-down" size={12} color="#fff" />
                 </TouchableOpacity>
                 <View style={{ flexDirection: 'row', gap: 4, marginTop: 4 }}>
+                  <TouchableOpacity style={styles.opBtn} onPress={() => { setSelectedNodeId(node.id); setShowPicker(showPicker === 'op' ? false : 'op'); }}>
+                    <Text style={styles.targetBtnText}>{node.props?.op || '='}</Text>
+                  </TouchableOpacity>
+                  <TextInput style={styles.valInput} value={node.props?.val?.toString() || ''} onChangeText={(t) => updateNodeProp('val', t)} placeholder="Value" placeholderTextColor="rgba(255,255,255,0.4)" />
+                </View>
+              </View>
+            )}
+
+            {node.type === 'set_instance_var' && (
+              <View style={styles.targetSection}>
+                <Text style={styles.targetLabel}>Target: Active Element</Text>
+                <TextInput style={[styles.valInput, { marginBottom: 4 }]} value={node.props?.key || ''} onChangeText={(t) => updateNodeProp('key', t)} placeholder="State Key (e.g. health)" placeholderTextColor="rgba(255,255,255,0.4)" />
+                <View style={{ flexDirection: 'row', gap: 4 }}>
                   <TouchableOpacity style={styles.opBtn} onPress={() => { setSelectedNodeId(node.id); setShowPicker(showPicker === 'op' ? false : 'op'); }}>
                     <Text style={styles.targetBtnText}>{node.props?.op || '='}</Text>
                   </TouchableOpacity>

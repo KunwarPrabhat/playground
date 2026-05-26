@@ -10,7 +10,8 @@ export type PrimitiveType =
   | 'modify_variable'
   | 'compare_state'
   | 'set_canvas_text'
-  | 'random_int';
+  | 'random_int'
+  | 'set_instance_var';
 
 export type GridSnap = 'off' | 8 | 16 | 32;
 
