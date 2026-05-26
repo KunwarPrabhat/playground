@@ -1,5 +1,5 @@
-import React, { useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, LayoutRectangle } from 'react-native';
+import React, { useRef, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, LayoutRectangle, TextInput } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, runOnJS } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useEngine } from '../../context/EngineContext';
@@ -23,6 +23,9 @@ const DraggableRow = ({
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
   const zIndex = useSharedValue(0);
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState(item.name);
 
   const pan = Gesture.Pan()
     .onStart(() => {
@@ -59,10 +62,30 @@ const DraggableRow = ({
           <TouchableOpacity
             style={[styles.row, isSelected && styles.rowSelected]}
             onPress={() => setSelectedId(item.id)}
+            onLongPress={() => setIsEditing(true)}
           >
             {depth > 0 && <View style={styles.treeLine} />}
             {depth > 0 && <Feather name="corner-down-right" size={14} color="#84a59d" style={{ marginRight: 6 }} />}
-            <Text style={[styles.name, isSelected && styles.textSelected]} numberOfLines={1}>{item.name}</Text>
+            {isEditing ? (
+              <TextInput
+                style={[styles.name, styles.nameInput, isSelected && styles.textSelected]}
+                value={editName}
+                onChangeText={setEditName}
+                autoFocus
+                onBlur={() => {
+                  updateElement(item.id, { name: editName });
+                  setIsEditing(false);
+                }}
+                onSubmitEditing={() => {
+                  updateElement(item.id, { name: editName });
+                  setIsEditing(false);
+                }}
+              />
+            ) : (
+              <Text style={[styles.name, isSelected && styles.textSelected]} numberOfLines={1}>
+                {item.name}
+              </Text>
+            )}
           </TouchableOpacity>
           
           {isSelected && isLogic && (
@@ -234,6 +257,14 @@ const styles = StyleSheet.create({
   name: {
     color: '#fff',
     fontSize: 12,
+  },
+  nameInput: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    paddingHorizontal: 4,
+    paddingVertical: 0,
+    borderRadius: 4,
+    minWidth: 80,
+    marginVertical: -2,
   },
   textSelected: {
     color: '#ddbea9',
