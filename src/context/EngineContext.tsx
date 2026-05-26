@@ -23,6 +23,7 @@ interface EngineContextType {
   updateGlobalVariable: (id: string, updates: Partial<GlobalVariable>) => void;
   removeGlobalVariable: (id: string) => void;
   updateElementState: (id: string, key: string, value: any) => void;
+  bulkAddElements: (newElements: ElementNode[]) => void;
 }
 
 const EngineContext = createContext<EngineContextType | undefined>(undefined);
@@ -120,6 +121,10 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     );
   }, []);
 
+  const bulkAddElements = useCallback((newElements: ElementNode[]) => {
+    setElements((prev) => [...prev, ...newElements]);
+  }, []);
+
   return (
     <EngineContext.Provider
       value={{
@@ -142,7 +147,8 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         addGlobalVariable,
         updateGlobalVariable,
         removeGlobalVariable,
-        updateElementState
+        updateElementState,
+        bulkAddElements
       }}
     >
       {children}

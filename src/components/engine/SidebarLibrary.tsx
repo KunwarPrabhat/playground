@@ -22,7 +22,8 @@ const BLUEPRINT_PRIMITIVES: PrimitiveType[] = [
   'compare_state',
   'set_canvas_text',
   'random_int',
-  'set_instance_var'
+  'set_instance_var',
+  'spawn_grid'
 ];
 
 const getIcon = (type: PrimitiveType) => {
@@ -43,6 +44,8 @@ const getIcon = (type: PrimitiveType) => {
       return <Feather name="shuffle" size={size} color={color} />;
     case 'set_instance_var':
       return <Feather name="database" size={size} color={color} />;
+    case 'spawn_grid':
+      return <Feather name="grid" size={size} color={color} />;
     case 'tile':
       return <Feather name="square" size={size} color={color} />;
     case 'text_element':

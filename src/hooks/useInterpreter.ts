@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useEngine } from '../context/EngineContext';
 import { useBlueprint } from '../context/BlueprintContext';
+import { ElementNode } from '../types/engineTypes';
 
 export const useInterpreter = () => {
   const {
@@ -8,6 +9,7 @@ export const useInterpreter = () => {
     globalVariables,
     updateGlobalVariable,
     updateElementState,
+    bulkAddElements,
   } = useEngine();
   const { nodes, wires } = useBlueprint();
 
@@ -46,11 +48,45 @@ export const useInterpreter = () => {
           updateElementState(activeElementId, key, newVal);
           console.log(`[Interpreter] Set Instance Var [${key}] on element [${activeElement.name}] from ${currentVal} to ${newVal}`);
         }
+      } else if (targetNode.type === 'spawn_grid') {
+        const templateId = targetNode.targetSceneId;
+        const template = elements.find((e) => e.id === templateId);
+        if (template) {
+          const rows = parseInt(targetNode.props?.rows) || 1;
+          const cols = parseInt(targetNode.props?.cols) || 1;
+          const gapX = parseFloat(targetNode.props?.gapX) || 0;
+          const gapY = parseFloat(targetNode.props?.gapY) || 0;
+
+          const newElements: ElementNode[] = [];
+          for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+              if (r === 0 && c === 0) continue;
+
+              const newX = template.x + c * (template.w + gapX);
+              const newY = template.y + r * (template.h + gapY);
+              const newId = Math.random().toString(36).substring(7);
+
+              newElements.push({
+                ...template,
+                id: newId,
+                name: `${template.name}_${r}_${c}`,
+                x: newX,
+                y: newY,
+                instanceState: template.instanceState ? { ...template.instanceState } : undefined,
+              });
+            }
+          }
+
+          if (newElements.length > 0) {
+            bulkAddElements(newElements);
+            console.log(`[Interpreter] Spawned grid: ${newElements.length} elements from template [${template.name}]`);
+          }
+        }
       }
 
       traverse(targetNode.id, activeElementId);
     });
-  }, [nodes, wires, globalVariables, updateGlobalVariable, elements, updateElementState]);
+  }, [nodes, wires, globalVariables, updateGlobalVariable, elements, updateElementState, bulkAddElements]);
 
   const executeEvent = useCallback((targetElementId: string, eventType: 'tap' | 'long_press') => {
     console.log(`[Interpreter] Event triggered: ${eventType.toUpperCase()} on Element ID: ${targetElementId}`);

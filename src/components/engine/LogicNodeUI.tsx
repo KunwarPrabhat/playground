@@ -208,6 +208,7 @@ export const LogicNodeUI: React.FC<Props> = ({ node }) => {
       case 'set_canvas_text': return { bg: 'rgba(221, 190, 169, 0.8)', border: '#ddbea9' };
       case 'random_int': return { bg: 'rgba(100, 150, 200, 0.8)', border: '#6496c8' };
       case 'set_instance_var': return { bg: 'rgba(155, 100, 200, 0.8)', border: '#9b64c8' };
+      case 'spawn_grid': return { bg: 'rgba(233, 196, 106, 0.8)', border: '#e9c46a' };
       default: return { bg: 'rgba(255, 255, 255, 0.5)', border: '#ccc' };
     }
   };
@@ -282,6 +283,24 @@ export const LogicNodeUI: React.FC<Props> = ({ node }) => {
                     <Text style={styles.targetBtnText}>{node.props?.op || '='}</Text>
                   </TouchableOpacity>
                   <TextInput style={styles.valInput} value={node.props?.val?.toString() || ''} onChangeText={(t) => updateNodeProp('val', t)} placeholder="Value" placeholderTextColor="rgba(255,255,255,0.4)" />
+                </View>
+              </View>
+            )}
+
+            {node.type === 'spawn_grid' && (
+              <View style={styles.targetSection}>
+                <Text style={styles.targetLabel}>Template Element:</Text>
+                <TouchableOpacity style={[styles.targetBtn, {marginBottom: 4}]} onPress={() => { setSelectedNodeId(node.id); setShowPicker(showPicker === 'targetSceneId' ? false : 'targetSceneId'); }}>
+                  <Text style={styles.targetBtnText} numberOfLines={1}>{node.targetSceneId ? (elements.find(e => e.id === node.targetSceneId)?.name || node.targetSceneId) : 'Select Element'}</Text>
+                  <Feather name="chevron-down" size={12} color="#fff" />
+                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', gap: 4, marginBottom: 4 }}>
+                  <TextInput style={styles.valInput} value={node.props?.rows?.toString() || ''} onChangeText={(t) => updateNodeProp('rows', t)} placeholder="Rows" placeholderTextColor="rgba(255,255,255,0.4)" keyboardType="numeric" />
+                  <TextInput style={styles.valInput} value={node.props?.cols?.toString() || ''} onChangeText={(t) => updateNodeProp('cols', t)} placeholder="Cols" placeholderTextColor="rgba(255,255,255,0.4)" keyboardType="numeric" />
+                </View>
+                <View style={{ flexDirection: 'row', gap: 4 }}>
+                  <TextInput style={styles.valInput} value={node.props?.gapX?.toString() || ''} onChangeText={(t) => updateNodeProp('gapX', t)} placeholder="Gap X" placeholderTextColor="rgba(255,255,255,0.4)" keyboardType="numeric" />
+                  <TextInput style={styles.valInput} value={node.props?.gapY?.toString() || ''} onChangeText={(t) => updateNodeProp('gapY', t)} placeholder="Gap Y" placeholderTextColor="rgba(255,255,255,0.4)" keyboardType="numeric" />
                 </View>
               </View>
             )}
