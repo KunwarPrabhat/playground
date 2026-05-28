@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, Alert, ScrollView, TextInput } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, Alert, ScrollView, TextInput, Dimensions } from 'react-native';
 import { EngineProvider, useEngine } from '../context/EngineContext';
 import { SidebarLibrary } from '../components/engine/SidebarLibrary';
 import { CanvasWorkspace } from '../components/engine/CanvasWorkspace';
@@ -30,6 +30,39 @@ const EngineInterface: React.FC<EngineInterfaceProps> = ({ projectId, projectNam
   const [showHierarchy, setShowHierarchy] = useState(false);
   const [showSceneManager, setShowSceneManager] = useState(false);
   const [activeTab, setActiveTab] = useState<'scene' | 'blueprint' | 'global_state'>('scene');
+  const [showImport, setShowImport] = useState(false);
+  const [importText, setImportText] = useState('');
+
+  const handleImportJSON = () => {
+    try {
+      const data = JSON.parse(importText);
+      const { width, height } = Dimensions.get('window');
+      
+      const offsetX = (width * 2) + 50;
+      const offsetY = (height * 2) + 100;
+
+      const newElements = (data.elements || []).map((el: any) => ({
+        ...el,
+        x: el.x + offsetX,
+        y: el.y + offsetY
+      }));
+
+      const newNodes = (data.nodes || []).map((n: any) => ({
+        ...n,
+        x: n.x + offsetX,
+        y: n.y + offsetY
+      }));
+
+      loadEngineState(newElements, data.globalVariables || globalVariables);
+      loadBlueprintState(newNodes, data.wires || []);
+
+      setShowImport(false);
+      setImportText('');
+      Alert.alert("Success", "Scene imported and centered!");
+    } catch (err) {
+      Alert.alert("Error", "Invalid JSON payload. Please check formatting.");
+    }
+  };
 
   useEffect(() => {
     if (initialMode) setMode(initialMode);
@@ -172,6 +205,11 @@ const EngineInterface: React.FC<EngineInterfaceProps> = ({ projectId, projectNam
                 <Feather name="box" size={16} color="#fff" />
               </TouchableOpacity>
             )}
+            {activeTab !== 'global_state' && (
+              <TouchableOpacity onPress={() => setShowImport(true)} style={styles.modeBtn}>
+                <Feather name="code" size={16} color="#d4a373" />
+              </TouchableOpacity>
+            )}
             <TouchableOpacity onPress={handleSave} style={styles.modeBtn}>
               <Feather name="save" size={16} color="#fff" />
             </TouchableOpacity>
@@ -233,6 +271,30 @@ const EngineInterface: React.FC<EngineInterfaceProps> = ({ projectId, projectNam
             <Feather name="plus" size={14} color="#0F1218" />
             <Text style={styles.newSceneBtnText}>New Scene</Text>
           </TouchableOpacity>
+        </View>
+      )}
+
+      {showImport && (
+        <View style={styles.importOverlay}>
+          <View style={styles.importModal}>
+            <Text style={styles.importTitle}>Developer Import</Text>
+            <TextInput
+              style={styles.importInput}
+              value={importText}
+              onChangeText={setImportText}
+              multiline
+              placeholder='Paste JSON payload with { "elements": [], "nodes": [], "wires": [], "globalVariables": [] }'
+              placeholderTextColor="rgba(255,255,255,0.3)"
+            />
+            <View style={styles.importActions}>
+              <TouchableOpacity style={styles.importCancelBtn} onPress={() => setShowImport(false)}>
+                <Text style={styles.importCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.importSubmitBtn} onPress={handleImportJSON}>
+                <Text style={styles.importSubmitText}>Import Scene</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       )}
 
@@ -451,6 +513,63 @@ const styles = StyleSheet.create({
   newSceneBtnText: {
     color: '#0F1218',
     fontSize: 12,
+    fontWeight: 'bold',
+  },
+  importOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 999,
+  },
+  importModal: {
+    width: '85%',
+    backgroundColor: '#1B2130',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(212, 163, 115, 0.4)',
+  },
+  importTitle: {
+    color: '#d4a373',
+    fontWeight: 'bold',
+    fontSize: 16,
+    marginBottom: 12,
+  },
+  importInput: {
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    color: '#fff',
+    borderRadius: 8,
+    padding: 12,
+    height: 250,
+    textAlignVertical: 'top',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    fontFamily: 'monospace',
+    fontSize: 11,
+    marginBottom: 16,
+  },
+  importActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+  },
+  importCancelBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  importCancelText: {
+    color: 'rgba(255,255,255,0.5)',
+    fontWeight: 'bold',
+  },
+  importSubmitBtn: {
+    backgroundColor: '#d4a373',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  importSubmitText: {
+    color: '#0F1218',
     fontWeight: 'bold',
   },
 });

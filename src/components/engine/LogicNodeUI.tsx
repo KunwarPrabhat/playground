@@ -676,7 +676,7 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
   pickerList: {
-    maxHeight: 120,
+    maxHeight: 220,
   },
   pickerOption: {
     paddingVertical: 6,

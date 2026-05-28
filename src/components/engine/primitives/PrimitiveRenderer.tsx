@@ -53,20 +53,42 @@ export const PrimitiveRenderer: React.FC<Props> = ({ type, width, height, instan
   if (type === 'tile') {
     const owner = instanceState?.owner || 0;
     const mass = instanceState?.mass || 0;
-    const color = owner === 1 ? '#ff4d4d' : owner === -1 ? '#48bea0' : 'rgba(255, 255, 255, 0.1)';
-    const borderColor = owner === 1 ? '#ff7b7b' : owner === -1 ? '#5cf2cc' : 'rgba(255,255,255,0.3)';
+    
+    // BuddyMattEnt Colors: Neon Red and Neon Green
+    const atomColor = owner === 1 ? '#ff3333' : owner === -1 ? '#33ff33' : 'transparent';
+
+    const renderAtoms = () => {
+      if (mass === 1) return <View style={{width: 18, height: 18, borderRadius: 9, backgroundColor: atomColor, shadowColor: atomColor, shadowOpacity: 1, shadowRadius: 10, elevation: 5}} />;
+      if (mass === 2) return (
+        <View style={{flexDirection: 'row', gap: 4}}>
+          <View style={{width: 14, height: 14, borderRadius: 7, backgroundColor: atomColor, shadowColor: atomColor, shadowOpacity: 1, shadowRadius: 8}} />
+          <View style={{width: 14, height: 14, borderRadius: 7, backgroundColor: atomColor, shadowColor: atomColor, shadowOpacity: 1, shadowRadius: 8}} />
+        </View>
+      );
+      if (mass === 3) return (
+        <View style={{flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 2, width: 34}}>
+          <View style={{width: 12, height: 12, borderRadius: 6, backgroundColor: atomColor}} />
+          <View style={{width: 12, height: 12, borderRadius: 6, backgroundColor: atomColor}} />
+          <View style={{width: 12, height: 12, borderRadius: 6, backgroundColor: atomColor}} />
+        </View>
+      );
+      return null;
+    };
 
     return (
-      <View style={[styles.container, { width, height, backgroundColor: 'rgba(0,0,0,0.5)', borderColor, borderWidth: owner !== 0 ? 2 : 1 }]}>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: 4, padding: 8 }}>
-          {Array.from({ length: Math.min(mass, 4) }).map((_, i) => (
-            <View key={i} style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: color, shadowColor: color, shadowOpacity: 1, shadowRadius: 8, elevation: 5 }} />
-          ))}
-        </View>
+      <View style={[styles.container, { 
+        width, height, 
+        backgroundColor: 'rgba(20, 24, 30, 0.9)', 
+        borderWidth: 1, 
+        borderColor: owner === 1 ? 'rgba(255, 51, 51, 0.3)' : owner === -1 ? 'rgba(51, 255, 51, 0.3)' : 'rgba(255, 255, 255, 0.1)', 
+        justifyContent: 'center', alignItems: 'center' 
+      }]}>
+        {renderAtoms()}
       </View>
     );
   }
 
+  
   if (type === 'grid') {
     const mRows = instanceState?.matrix?.length || Math.max(1, Math.floor(height / 40));
     const mCols = instanceState?.matrix?.[0]?.length || Math.max(1, Math.floor(width / 40));
