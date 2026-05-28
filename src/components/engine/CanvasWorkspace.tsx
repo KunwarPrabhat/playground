@@ -17,7 +17,7 @@ export const CanvasWorkspace: React.FC = () => {
 
 
   const isPinching = useSharedValue(false);
-  const blockPanNextFrame = useSharedValue(false); 
+  const blockPanNextFrame = useSharedValue(false);
   const pinchStartScale = useSharedValue(1);
   const pinchStartPanX = useSharedValue(0);
   const pinchStartPanY = useSharedValue(0);
@@ -25,8 +25,8 @@ export const CanvasWorkspace: React.FC = () => {
   const pinchStartFocalY = useSharedValue(0);
   const lastSafeFocalX = useSharedValue(0);
   const lastSafeFocalY = useSharedValue(0);
-  
- const canvasPanGesture = Gesture.Pan()
+
+  const canvasPanGesture = Gesture.Pan()
     .maxPointers(1)
     .onChange((e) => {
       if (isPinching.value) return;
@@ -113,20 +113,16 @@ export const CanvasWorkspace: React.FC = () => {
 
   return (
     <View style={styles.viewport}>
-      {/* Dynamic 2D Vector Axis Gizmo HUD */}
       <View style={styles.hudContainer} pointerEvents="none">
         <View style={styles.gizmoBox}>
-          {/* Green Y Arrow */}
           <View style={styles.axisYLine} />
           <View style={styles.axisYArrow} />
           <Text style={[styles.axisText, { color: '#84a59d', top: 2, left: 14 }]}>Y</Text>
 
-          {/* Red X Arrow */}
           <View style={styles.axisXLine} />
           <View style={styles.axisXArrow} />
           <Text style={[styles.axisText, { color: '#f28482', top: 22, left: 34 }]}>X</Text>
 
-          {/* Origin Point */}
           <View style={styles.axisOrigin} />
         </View>
         <View style={styles.readoutBox}>
@@ -137,15 +133,14 @@ export const CanvasWorkspace: React.FC = () => {
         </View>
       </View>
 
-      {/* Hardware-safe Viewport-bounded Infinite Background Grid */}
       <View style={styles.gridContainer} pointerEvents="none">
         <Animated.View style={[styles.gridLayer, gridAnimatedStyle]}>
           <Svg width="100%" height="100%">
             <Defs>
-              <Pattern 
-                id="bgGrid" 
-                width="40" 
-                height="40" 
+              <Pattern
+                id="bgGrid"
+                width="40"
+                height="40"
                 patternUnits="userSpaceOnUse"
                 x={-(SCREEN_W * 1.5)}
                 y={-(SCREEN_H * 1.5)}
@@ -163,12 +158,10 @@ export const CanvasWorkspace: React.FC = () => {
       <GestureDetector gesture={combinedGesture}>
         <View style={StyleSheet.absoluteFill}>
           <Animated.View style={[styles.canvasLayer, canvasAnimatedStyle]}>
-            {/* Background Tap Receiver (behind elements) */}
             <TouchableWithoutFeedback onPress={handleCanvasTap}>
               <View style={StyleSheet.absoluteFillObject} />
             </TouchableWithoutFeedback>
 
-            {/* Interactive Elements Layer */}
             <View style={styles.touchArea} pointerEvents="box-none">
               {elements.map((el) => (
                 <TransformableNode key={el.id} element={el} />

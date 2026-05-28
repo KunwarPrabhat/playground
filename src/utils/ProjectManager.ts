@@ -52,3 +52,45 @@ export async function getProjectList(): Promise<{ id: string; name: string; last
   if (!listRaw) return [];
   return JSON.parse(listRaw);
 }
+
+const DEMO_LIST_KEY = 'make2d_demo_list';
+
+export async function getDemoIds(): Promise<string[]> {
+  const raw = await AsyncStorage.getItem(DEMO_LIST_KEY);
+  if (!raw) return [];
+  return JSON.parse(raw);
+}
+
+export async function addDemoId(id: string): Promise<void> {
+  const ids = await getDemoIds();
+  if (!ids.includes(id)) {
+    ids.push(id);
+    await AsyncStorage.setItem(DEMO_LIST_KEY, JSON.stringify(ids));
+  }
+}
+
+export async function removeDemoId(id: string): Promise<void> {
+  let ids = await getDemoIds();
+  ids = ids.filter((dId) => dId !== id);
+  await AsyncStorage.setItem(DEMO_LIST_KEY, JSON.stringify(ids));
+}
+
+export async function deleteProjects(ids: string[]): Promise<void> {
+  const listRaw = await AsyncStorage.getItem(LIST_KEY);
+  if (!listRaw) return;
+  let list: { id: string; name: string; lastModified: number }[] = JSON.parse(listRaw);
+  
+  list = list.filter((p) => !ids.includes(p.id));
+  await AsyncStorage.setItem(LIST_KEY, JSON.stringify(list));
+
+  const demoRaw = await AsyncStorage.getItem(DEMO_LIST_KEY);
+  if (demoRaw) {
+    let demoIds: string[] = JSON.parse(demoRaw);
+    demoIds = demoIds.filter((dId) => !ids.includes(dId));
+    await AsyncStorage.setItem(DEMO_LIST_KEY, JSON.stringify(demoIds));
+  }
+  
+  for (const id of ids) {
+    await AsyncStorage.removeItem(PROJECT_PREFIX + id);
+  }
+}

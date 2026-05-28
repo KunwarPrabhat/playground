@@ -68,17 +68,17 @@ export const PrimitiveRenderer: React.FC<Props> = ({ type, width, height, instan
   }
 
   if (type === 'grid') {
-    const mRows = instanceState?.matrix?.length || Math.max(1, Math.floor(height / 32));
-    const mCols = instanceState?.matrix?.[0]?.length || Math.max(1, Math.floor(width / 32));
+    const mRows = instanceState?.matrix?.length || Math.max(1, Math.floor(height / 40));
+    const mCols = instanceState?.matrix?.[0]?.length || Math.max(1, Math.floor(width / 40));
     return (
-      <View style={[styles.container, { width, height, backgroundColor: '#0B0E14', borderColor: '#00f0ff', borderWidth: 2, padding: 2, flexDirection: 'column', shadowColor: '#00f0ff', shadowOpacity: 0.5, shadowRadius: 10, elevation: 5 }]}>
+      <View style={[styles.container, { width, height, backgroundColor: 'rgba(30, 34, 42, 0.4)', borderColor: 'rgba(132, 165, 157, 0.5)', borderWidth: 1.5, padding: 0, flexDirection: 'column' }]}>
         {Array.from({ length: mRows }).map((_, r) => (
           <View key={r} style={{ flexDirection: 'row', flex: 1 }}>
             {Array.from({ length: mCols }).map((_, c) => {
               const val = instanceState?.matrix?.[r]?.[c] || 0;
-              const cellColor = val === 1 ? '#00f0ff' : val === -1 ? '#ff0055' : 'transparent';
+              const cellColor = val === 1 ? '#84a59d' : val === -1 ? '#f28482' : 'transparent';
               return (
-                <View key={c} style={{ flex: 1, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.4)', backgroundColor: cellColor, margin: 1, borderRadius: 2 }} />
+                <View key={c} style={{ flex: 1, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)', backgroundColor: cellColor }} />
               );
             })}
           </View>
@@ -88,20 +88,21 @@ export const PrimitiveRenderer: React.FC<Props> = ({ type, width, height, instan
   }
 
   if (type === 'text_element') {
+    const calculatedFontSize = Math.max(12, Math.floor(height * 0.3));
     return (
       <View style={[styles.container, { width, height, backgroundColor: 'transparent', borderWidth: mode === 'edit' ? 1 : 0, borderColor: 'rgba(255,255,255,0.2)', padding: 10 }]}>
-         <View pointerEvents={isSelected ? "auto" : "none"} style={{ flex: 1 }}>
-           <TextInput 
-             style={{ color: '#fff', fontSize: 16, width: '100%', height: '100%', textAlign: 'center' }}
-             value={instanceState?.text || ''}
-             placeholder={mode === 'edit' ? "Double Tap to Type..." : ""}
-             placeholderTextColor="rgba(255,255,255,0.3)"
-             onChangeText={(t) => updateElement && updateElement({ instanceState: { ...instanceState, text: t } })}
-             editable={isSelected && mode === 'edit'}
-             onBlur={() => Keyboard.dismiss()}
-             multiline
-           />
-         </View>
+        <View pointerEvents={isSelected ? "auto" : "none"} style={{ flex: 1 }}>
+          <TextInput
+            style={{ color: '#fff', fontSize: calculatedFontSize, width: '100%', height: '100%', textAlign: 'center' }}
+            value={instanceState?.text || ''}
+            placeholder={mode === 'edit' ? "Double Tap to Type..." : ""}
+            placeholderTextColor="rgba(255,255,255,0.3)"
+            onChangeText={(t) => updateElement && updateElement({ instanceState: { ...instanceState, text: t } })}
+            editable={isSelected && mode === 'edit'}
+            onBlur={() => Keyboard.dismiss()}
+            multiline
+          />
+        </View>
       </View>
     );
   }

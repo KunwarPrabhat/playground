@@ -13,15 +13,22 @@ import * as ProjectManager from '../utils/ProjectManager';
 interface EngineInterfaceProps {
   projectId: string;
   projectName: string;
+  initialMode?: 'edit' | 'play';
   onExit: () => void;
 }
 
-const EngineInterface: React.FC<EngineInterfaceProps> = ({ projectId, projectName, onExit }) => {
+const EngineInterface: React.FC<EngineInterfaceProps> = ({ projectId, projectName, initialMode, onExit }) => {
   const { mode, setMode, elements, selectedId, deleteElement, loadEngineState, clearEngineState, globalVariables } = useEngine();
   const { nodes, wires, loadBlueprintState, clearBlueprintState } = useBlueprint();
   const [showLibrary, setShowLibrary] = useState(false);
   const [showHierarchy, setShowHierarchy] = useState(false);
   const [activeTab, setActiveTab] = useState<'scene' | 'blueprint' | 'global_state'>('scene');
+
+  useEffect(() => {
+    if (initialMode) {
+      setMode(initialMode);
+    }
+  }, [initialMode, setMode]);
 
   useEffect(() => {
     if (projectId) {
@@ -158,14 +165,15 @@ const EngineInterface: React.FC<EngineInterfaceProps> = ({ projectId, projectNam
 interface MakerScreenProps {
   projectId: string;
   projectName: string;
+  initialMode?: 'edit' | 'play';
   onExit: () => void;
 }
 
-export const MakerScreen: React.FC<MakerScreenProps> = ({ projectId, projectName, onExit }) => {
+export const MakerScreen: React.FC<MakerScreenProps> = ({ projectId, projectName, initialMode, onExit }) => {
   return (
     <EngineProvider>
       <BlueprintProvider>
-        <EngineInterface projectId={projectId} projectName={projectName} onExit={onExit} />
+        <EngineInterface projectId={projectId} projectName={projectName} initialMode={initialMode} onExit={onExit} />
       </BlueprintProvider>
     </EngineProvider>
   );

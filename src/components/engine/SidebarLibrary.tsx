@@ -93,6 +93,7 @@ export const SidebarLibrary: React.FC<Props> = ({ mode }) => {
   const { addElement, elements, setElements, panX, panY, scale } = useEngine();
   const { addLogicNode, panX: bpPanX, panY: bpPanY, scale: bpScale } = useBlueprint();
   const [activeName, setActiveName] = React.useState<string | null>(null);
+  const [isMinimized, setIsMinimized] = React.useState(false);
 
   const handleAdd = (type: PrimitiveType) => {
     // 40px grid aligned sizes
@@ -161,32 +162,40 @@ export const SidebarLibrary: React.FC<Props> = ({ mode }) => {
     <View style={styles.dock}>
       <View style={styles.dockHeader}>
         <Text style={styles.headerTitle}>{mode === 'scene' ? 'Canvas Library' : 'Blueprint Library'}</Text>
-        {mode === 'scene' && (
+        {mode === 'scene' ? (
           <TouchableOpacity style={styles.resetBtn} onPress={handleReset}>
             <MaterialCommunityIcons name="cached" size={14} color="#ddbea9" style={{ marginRight: 4 }} />
             <Text style={styles.resetBtnText}>RESET</Text>
           </TouchableOpacity>
+        ) : (
+          <TouchableOpacity onPress={() => setIsMinimized(!isMinimized)} style={styles.minimizeBtn}>
+            <Feather name={isMinimized ? "chevron-up" : "chevron-down"} size={18} color="#ddbea9" />
+          </TouchableOpacity>
         )}
       </View>
 
-      <View style={styles.activeTagContainer}>
-        <Text style={styles.activeTagText}>
-          {activeName ? `[ ${activeName} ]` : '[ SELECT BLOCK ]'}
-        </Text>
-      </View>
+      {!isMinimized && (
+        <>
+          <View style={styles.activeTagContainer}>
+            <Text style={styles.activeTagText}>
+              {activeName ? `[ ${activeName} ]` : '[ SELECT BLOCK ]'}
+            </Text>
+          </View>
 
-      <View style={styles.iconGrid}>
-        {currentPrimitives.map((prim) => (
-          <TouchableOpacity
-            key={prim}
-            onPress={() => handleAdd(prim)}
-            onPressIn={() => setActiveName(prim.replace(/_/g, ' ').toUpperCase())}
-            style={styles.iconButton}
-          >
-            {getIcon(prim)}
-          </TouchableOpacity>
-        ))}
-      </View>
+          <View style={styles.iconGrid}>
+            {currentPrimitives.map((prim) => (
+              <TouchableOpacity
+                key={prim}
+                onPress={() => handleAdd(prim)}
+                onPressIn={() => setActiveName(prim.replace(/_/g, ' ').toUpperCase())}
+                style={styles.iconButton}
+              >
+                {getIcon(prim)}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </>
+      )}
     </View>
   );
 };
@@ -262,5 +271,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 2,
+  },
+  minimizeBtn: {
+    padding: 4,
   },
 });

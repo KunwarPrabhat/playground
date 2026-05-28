@@ -5,7 +5,7 @@ import { MakerScreen } from './src/screens/MakerScreen';
 import { HomeScreen } from './src/screens/HomeScreen';
 
 export default function App() {
-  const [currentProject, setCurrentProject] = useState<{ id: string; name: string } | null>(null);
+  const [currentProject, setCurrentProject] = useState<{ id: string; name: string; mode?: 'edit' | 'play' } | null>(null);
 
   return (
     <GestureHandlerRootView style={styles.container}>
@@ -15,11 +15,12 @@ export default function App() {
           <MakerScreen
             projectId={currentProject.id}
             projectName={currentProject.name}
+            initialMode={currentProject.mode}
             onExit={() => setCurrentProject(null)}
           />
         ) : (
           <HomeScreen
-            onOpenProject={(id, name) => setCurrentProject({ id, name })}
+            onOpenProject={(id, name, mode) => setCurrentProject({ id, name, mode })}
           />
         )}
       </SafeAreaView>
