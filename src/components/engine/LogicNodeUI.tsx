@@ -117,7 +117,6 @@ export const LogicNodeUI: React.FC<Props> = ({ node }) => {
     );
 
   const handleConnectWire = (dX: number, dY: number) => {
-    console.log("[LogicNodeUI] handleConnectWire target drop coordinates in canvas-space:", dX, dY);
     for (const targetNode of nodes) {
       if (targetNode.id === node.id) continue;
 
@@ -125,10 +124,7 @@ export const LogicNodeUI: React.FC<Props> = ({ node }) => {
       const pinY = targetNode.y + (targetNode.height ? targetNode.height / 2 : 55);
       const dist = Math.hypot(pinX - dX, pinY - dY);
 
-      console.log(`[LogicNodeUI] Checking target node: ${targetNode.id} at pinX:${pinX}, pinY:${pinY}. Distance is ${dist}`);
-
       if (dist < 120) {
-        console.log(`[LogicNodeUI] Snapped successfully to node ${targetNode.id}! Creating wire.`);
         addWire({
           id: Math.random().toString(36).substring(7),
           fromNodeId: node.id,
@@ -216,6 +212,11 @@ export const LogicNodeUI: React.FC<Props> = ({ node }) => {
       case 'if_else_block': return { bg: 'rgba(160, 100, 220, 0.8)', border: '#a064dc' };
       case 'count_elements': return { bg: 'rgba(120, 180, 230, 0.8)', border: '#78b4e6' };
       case 'on_execution_complete': return { bg: 'rgba(80, 200, 120, 0.8)', border: '#50c878' };
+      case 'load_scene': return { bg: 'rgba(233, 116, 81, 0.8)', border: '#e97451' };
+      case 'on_tick': return { bg: 'rgba(230, 200, 90, 0.8)', border: '#e6c85a' };
+      case 'delay': return { bg: 'rgba(150, 150, 150, 0.8)', border: '#969696' };
+      case 'set_transform': return { bg: 'rgba(90, 200, 230, 0.8)', border: '#5ac8e6' };
+      case 'destroy_element': return { bg: 'rgba(230, 70, 70, 0.8)', border: '#e64646' };
       case 'init_matrix':
       case 'set_matrix_cell':
       case 'get_matrix_cell': return { bg: 'rgba(212, 163, 115, 0.8)', border: '#d4a373' };
@@ -433,6 +434,65 @@ export const LogicNodeUI: React.FC<Props> = ({ node }) => {
               </View>
             )}
 
+            {node.type === 'load_scene' && (
+              <View style={styles.targetSection}>
+                <Text style={styles.targetLabel}>Target Scene Name:</Text>
+                <TextInput
+                  style={[styles.valInput, { marginBottom: 4 }]}
+                  value={node.props?.sceneName || ''}
+                  onChangeText={(t) => updateNodeProp('sceneName', t)}
+                  placeholder="e.g. Level 2"
+                  placeholderTextColor="rgba(255,255,255,0.4)"
+                />
+                <Text style={[styles.targetLabel, { marginTop: 4, color: '#e97451' }]}>* Exact name match required</Text>
+              </View>
+            )}
+
+            {node.type === 'on_tick' && (
+              <View style={styles.targetSection}>
+                <Text style={styles.targetLabel}>Target Canvas ID:</Text>
+                <TouchableOpacity style={styles.targetBtn} onPress={() => { setSelectedNodeId(node.id); setShowPicker(showPicker === 'targetSceneId' ? false : 'targetSceneId'); }}>
+                  <Text style={styles.targetBtnText} numberOfLines={1}>{node.targetSceneId ? (elements.find(e => e.id === node.targetSceneId)?.name || node.targetSceneId) : 'Select Element'}</Text>
+                  <Feather name="chevron-down" size={12} color="#fff" />
+                </TouchableOpacity>
+                <TextInput style={[styles.valInput, { marginTop: 4 }]} value={node.props?.interval?.toString() || ''} onChangeText={(t) => updateNodeProp('interval', t)} placeholder="Interval (ms)" placeholderTextColor="rgba(255,255,255,0.4)" keyboardType="numeric" />
+              </View>
+            )}
+
+            {node.type === 'delay' && (
+              <View style={styles.targetSection}>
+                <TextInput style={styles.valInput} value={node.props?.ms?.toString() || ''} onChangeText={(t) => updateNodeProp('ms', t)} placeholder="Delay Time (ms)" placeholderTextColor="rgba(255,255,255,0.4)" keyboardType="numeric" />
+              </View>
+            )}
+
+            {node.type === 'destroy_element' && (
+              <View style={styles.targetSection}>
+                <Text style={styles.targetLabel}>Target Canvas ID:</Text>
+                <TouchableOpacity style={styles.targetBtn} onPress={() => { setSelectedNodeId(node.id); setShowPicker(showPicker === 'targetSceneId' ? false : 'targetSceneId'); }}>
+                  <Text style={styles.targetBtnText} numberOfLines={1}>{node.targetSceneId ? (elements.find(e => e.id === node.targetSceneId)?.name || node.targetSceneId) : 'Active Element'}</Text>
+                  <Feather name="chevron-down" size={12} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {node.type === 'set_transform' && (
+              <View style={styles.targetSection}>
+                <Text style={styles.targetLabel}>Target Canvas ID:</Text>
+                <TouchableOpacity style={[styles.targetBtn, {marginBottom: 4}]} onPress={() => { setSelectedNodeId(node.id); setShowPicker(showPicker === 'targetSceneId' ? false : 'targetSceneId'); }}>
+                  <Text style={styles.targetBtnText} numberOfLines={1}>{node.targetSceneId ? (elements.find(e => e.id === node.targetSceneId)?.name || node.targetSceneId) : 'Active Element'}</Text>
+                  <Feather name="chevron-down" size={12} color="#fff" />
+                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', gap: 4, marginBottom: 4 }}>
+                  <TextInput style={styles.valInput} value={node.props?.x?.toString() || ''} onChangeText={(t) => updateNodeProp('x', t)} placeholder="X (or +10)" placeholderTextColor="rgba(255,255,255,0.4)" />
+                  <TextInput style={styles.valInput} value={node.props?.y?.toString() || ''} onChangeText={(t) => updateNodeProp('y', t)} placeholder="Y (or -10)" placeholderTextColor="rgba(255,255,255,0.4)" />
+                </View>
+                <View style={{ flexDirection: 'row', gap: 4 }}>
+                  <TextInput style={styles.valInput} value={node.props?.w?.toString() || ''} onChangeText={(t) => updateNodeProp('w', t)} placeholder="W" placeholderTextColor="rgba(255,255,255,0.4)" />
+                  <TextInput style={styles.valInput} value={node.props?.h?.toString() || ''} onChangeText={(t) => updateNodeProp('h', t)} placeholder="H" placeholderTextColor="rgba(255,255,255,0.4)" />
+                </View>
+              </View>
+            )}
+
             {node.type === 'compare_state' && (
               <View style={styles.targetSection}>
                 <Text style={styles.targetLabel}>Compare:</Text>
@@ -461,7 +521,6 @@ export const LogicNodeUI: React.FC<Props> = ({ node }) => {
         </View>
       </GestureDetector>
 
-      {/* Dynamic Picker Popover */}
       {isSelected && showPicker && (
         <View style={styles.pickerOverlay}>
           <Text style={styles.pickerTitle}>Select Option</Text>
@@ -493,7 +552,6 @@ export const LogicNodeUI: React.FC<Props> = ({ node }) => {
               </TouchableOpacity>
             ))}
 
-            {/* Empty states */}
             {showPicker === 'targetSceneId' && elements.length === 0 && (
               <Text style={styles.pickerOptionName}>No elements in scene</Text>
             )}

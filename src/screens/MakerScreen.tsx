@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, Alert, ScrollView, TextInput } from 'react-native';
 import { EngineProvider, useEngine } from '../context/EngineContext';
 import { SidebarLibrary } from '../components/engine/SidebarLibrary';
 import { CanvasWorkspace } from '../components/engine/CanvasWorkspace';
@@ -18,24 +18,31 @@ interface EngineInterfaceProps {
 }
 
 const EngineInterface: React.FC<EngineInterfaceProps> = ({ projectId, projectName, initialMode, onExit }) => {
-  const { mode, setMode, elements, selectedId, deleteElement, loadEngineState, clearEngineState, globalVariables } = useEngine();
+  const { mode, setMode, elements, selectedId, deleteElement, loadEngineState, clearEngineState, globalVariables, sceneLoadRequest, setSceneLoadRequest } = useEngine();
   const { nodes, wires, loadBlueprintState, clearBlueprintState } = useBlueprint();
+  
+  const [scenes, setScenes] = useState<ProjectManager.SceneData[]>([]);
+  const [activeSceneId, setActiveSceneId] = useState<string | null>(null);
+  const [editingSceneId, setEditingSceneId] = useState<string | null>(null);
+  const [editingSceneName, setEditingSceneName] = useState('');
+  
   const [showLibrary, setShowLibrary] = useState(false);
   const [showHierarchy, setShowHierarchy] = useState(false);
+  const [showSceneManager, setShowSceneManager] = useState(false);
   const [activeTab, setActiveTab] = useState<'scene' | 'blueprint' | 'global_state'>('scene');
 
   useEffect(() => {
-    if (initialMode) {
-      setMode(initialMode);
-    }
+    if (initialMode) setMode(initialMode);
   }, [initialMode, setMode]);
 
   useEffect(() => {
     if (projectId) {
       ProjectManager.loadProject(projectId).then((proj) => {
-        if (proj) {
-          loadEngineState(proj.engineData?.elements || [], proj.engineData?.globalVariables || []);
-          loadBlueprintState(proj.blueprintData?.nodes || [], proj.blueprintData?.wires || []);
+        if (proj && proj.scenes && proj.scenes.length > 0) {
+          setScenes(proj.scenes);
+          setActiveSceneId(proj.scenes[0].id);
+          loadEngineState(proj.scenes[0].elements || [], proj.globalVariables || []);
+          loadBlueprintState(proj.scenes[0].nodes || [], proj.scenes[0].wires || []);
         }
       });
     } else {
@@ -44,32 +51,92 @@ const EngineInterface: React.FC<EngineInterfaceProps> = ({ projectId, projectNam
     }
   }, [projectId]);
 
+  const handleSceneSwitch = (newSceneId: string) => {
+    const updatedScenes = scenes.map(s => 
+      s.id === activeSceneId ? { ...s, elements, nodes, wires } : s
+    );
+    setScenes(updatedScenes);
+    const nextScene = updatedScenes.find(s => s.id === newSceneId);
+    if (nextScene) {
+      setActiveSceneId(nextScene.id);
+      loadEngineState(nextScene.elements || [], globalVariables);
+      loadBlueprintState(nextScene.nodes || [], nextScene.wires || []);
+    }
+    setShowSceneManager(false);
+  };
+
+  useEffect(() => {
+    if (sceneLoadRequest) {
+      const target = scenes.find(s => s.name.toLowerCase() === sceneLoadRequest.toLowerCase());
+      if (target && target.id !== activeSceneId) {
+        handleSceneSwitch(target.id);
+      } else if (!target) {
+        console.warn(`[Engine] Scene not found: ${sceneLoadRequest}`);
+      }
+      setSceneLoadRequest(null);
+    }
+  }, [sceneLoadRequest, scenes, activeSceneId]);
+
+  const handleCreateScene = () => {
+    const newSceneId = 'scene_' + Math.random().toString(36).substring(2, 9);
+    const newSceneName = `Scene ${scenes.length + 1}`;
+    
+    const updatedScenes = scenes.map(s => 
+      s.id === activeSceneId ? { ...s, elements, nodes, wires } : s
+    );
+    
+    const newSceneData = { id: newSceneId, name: newSceneName, elements: [], nodes: [], wires: [] };
+    const finalScenes = [...updatedScenes, newSceneData];
+    
+    setScenes(finalScenes);
+    setActiveSceneId(newSceneId);
+    loadEngineState([], globalVariables);
+    loadBlueprintState([], []);
+    setShowSceneManager(false);
+  };
+
+  const submitSceneRename = () => {
+    if (editingSceneId && editingSceneName.trim()) {
+      setScenes(scenes.map(s => s.id === editingSceneId ? { ...s, name: editingSceneName.trim() } : s));
+    }
+    setEditingSceneId(null);
+  };
+
   const handleSave = () => {
+    const updatedScenes = scenes.map(s => 
+      s.id === activeSceneId ? { ...s, elements, nodes, wires } : s
+    );
+    setScenes(updatedScenes);
+
     ProjectManager.saveProject({
       id: projectId,
       name: projectName,
       lastModified: Date.now(),
-      engineData: { elements, globalVariables },
-      blueprintData: { nodes, wires }
+      globalVariables,
+      scenes: updatedScenes
     }).then(() => {
       Alert.alert('Saved', 'Project saved successfully!');
     }).catch((err) => {
       Alert.alert('Error', 'Failed to save project.');
-      console.error(err);
     });
   };
+
+  const activeSceneName = scenes.find(s => s.id === activeSceneId)?.name || 'Unknown Scene';
 
   if (mode === 'play') {
     return (
       <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onExit} style={styles.backBtn}>
-            <Feather name="arrow-left" size={20} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.title}>{projectName} (Play)</Text>
-          <TouchableOpacity onPress={() => setMode('edit')} style={styles.modeBtn}>
-            <Feather name="square" size={16} color="#cb997e" />
-          </TouchableOpacity>
+        <View style={styles.headerContainer}>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={onExit} style={styles.backBtn}>
+              <Feather name="arrow-left" size={20} color="#fff" />
+            </TouchableOpacity>
+            <Text style={styles.title}>{projectName} - {activeSceneName} (Play)</Text>
+            <TouchableOpacity onPress={() => setMode('edit')} style={styles.modeBtn}>
+              <Feather name="square" size={16} color="#cb997e" />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.subHeader} />
         </View>
         <CanvasWorkspace />
       </View>
@@ -78,78 +145,106 @@ const EngineInterface: React.FC<EngineInterfaceProps> = ({ projectId, projectNam
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onExit} style={styles.backBtn}>
-          <Feather name="arrow-left" size={20} color="#fff" />
-        </TouchableOpacity>
-        
-        <View style={styles.tabToggle}>
-          <TouchableOpacity
-            style={[styles.tabBtn, activeTab === 'scene' && styles.tabBtnActive]}
-            onPress={() => setActiveTab('scene')}
-          >
-            <Text style={[styles.tabText, activeTab === 'scene' && styles.tabTextActive]}>Scene</Text>
+      <View style={styles.headerContainer}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={onExit} style={styles.backBtn}>
+            <Feather name="arrow-left" size={20} color="#fff" />
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tabBtn, activeTab === 'blueprint' && styles.tabBtnActive]}
-            onPress={() => setActiveTab('blueprint')}
-          >
-            <Text style={[styles.tabText, activeTab === 'blueprint' && styles.tabTextActive]}>Blueprint</Text>
+          
+          <TouchableOpacity style={styles.sceneDropdownBtn} onPress={() => setShowSceneManager(!showSceneManager)}>
+            <Text style={styles.title} numberOfLines={1}>{projectName} / {activeSceneName}</Text>
+            <Feather name={showSceneManager ? "chevron-up" : "chevron-down"} size={16} color="#ddbea9" />
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tabBtn, activeTab === 'global_state' && styles.tabBtnActive]}
-            onPress={() => setActiveTab('global_state')}
-          >
-            <Text style={[styles.tabText, activeTab === 'global_state' && styles.tabTextActive]}>State</Text>
+
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.headerActionsWrapper} contentContainerStyle={styles.headerActionsScroll}>
+            {selectedId && (
+              <TouchableOpacity onPress={() => deleteElement(selectedId)} style={styles.deleteBtn}>
+                <Feather name="trash-2" size={16} color="#fff" />
+              </TouchableOpacity>
+            )}
+            {activeTab === 'scene' && (
+              <TouchableOpacity onPress={() => setShowHierarchy(!showHierarchy)} style={styles.modeBtn}>
+                <Feather name="list" size={16} color="#fff" />
+              </TouchableOpacity>
+            )}
+            {activeTab !== 'global_state' && (
+              <TouchableOpacity onPress={() => setShowLibrary(!showLibrary)} style={styles.modeBtn}>
+                <Feather name="box" size={16} color="#fff" />
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity onPress={handleSave} style={styles.modeBtn}>
+              <Feather name="save" size={16} color="#fff" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setMode('play')} style={styles.modeBtn}>
+              <Feather name="play" size={16} color="#71a071" />
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+
+        <View style={styles.subHeader}>
+          <View style={styles.tabToggle}>
+            <TouchableOpacity style={[styles.tabBtn, activeTab === 'scene' && styles.tabBtnActive]} onPress={() => setActiveTab('scene')}>
+              <Text style={[styles.tabText, activeTab === 'scene' && styles.tabTextActive]}>Scene</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.tabBtn, activeTab === 'blueprint' && styles.tabBtnActive]} onPress={() => setActiveTab('blueprint')}>
+              <Text style={[styles.tabText, activeTab === 'blueprint' && styles.tabTextActive]}>Blueprint</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.tabBtn, activeTab === 'global_state' && styles.tabBtnActive]} onPress={() => setActiveTab('global_state')}>
+              <Text style={[styles.tabText, activeTab === 'global_state' && styles.tabTextActive]}>State</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+
+      {showSceneManager && (
+        <View style={styles.sceneManagerDropdown}>
+          <Text style={styles.sceneManagerTitle}>Scenes in Project</Text>
+          <ScrollView style={styles.sceneList}>
+            {scenes.map(s => (
+              <TouchableOpacity 
+                key={s.id} 
+                style={[styles.sceneRow, s.id === activeSceneId && styles.sceneRowActive]} 
+                onPress={() => {
+                  if (editingSceneId === s.id) return;
+                  handleSceneSwitch(s.id);
+                }}
+                onLongPress={() => {
+                  setEditingSceneId(s.id);
+                  setEditingSceneName(s.name);
+                }}
+              >
+                <Feather name="layout" size={14} color={s.id === activeSceneId ? "#ddbea9" : "rgba(255,255,255,0.5)"} />
+                {editingSceneId === s.id ? (
+                  <TextInput
+                    style={[styles.sceneRowText, styles.sceneRowTextActive, { padding: 0, margin: 0, flex: 1, borderBottomWidth: 1, borderBottomColor: '#ddbea9' }]}
+                    value={editingSceneName}
+                    onChangeText={setEditingSceneName}
+                    autoFocus
+                    onBlur={submitSceneRename}
+                    onSubmitEditing={submitSceneRename}
+                  />
+                ) : (
+                  <Text style={[styles.sceneRowText, s.id === activeSceneId && styles.sceneRowTextActive]}>{s.name}</Text>
+                )}
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+          <TouchableOpacity style={styles.newSceneBtn} onPress={handleCreateScene}>
+            <Feather name="plus" size={14} color="#0F1218" />
+            <Text style={styles.newSceneBtnText}>New Scene</Text>
           </TouchableOpacity>
         </View>
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          style={styles.headerActionsWrapper}
-          contentContainerStyle={styles.headerActionsScroll}
-        >
-          {selectedId && (
-            <TouchableOpacity onPress={() => deleteElement(selectedId)} style={styles.deleteBtn}>
-              <Feather name="trash-2" size={16} color="#fff" />
-            </TouchableOpacity>
-          )}
-          {activeTab === 'scene' && (
-            <TouchableOpacity onPress={() => setShowHierarchy(!showHierarchy)} style={styles.modeBtn}>
-              <Feather name="list" size={16} color="#fff" />
-            </TouchableOpacity>
-          )}
-          {activeTab !== 'global_state' && (
-            <TouchableOpacity onPress={() => setShowLibrary(!showLibrary)} style={styles.modeBtn}>
-              <Feather name="box" size={16} color="#fff" />
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity onPress={handleSave} style={styles.modeBtn}>
-            <Feather name="save" size={16} color="#fff" />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setMode('play')} style={styles.modeBtn}>
-            <Feather name="play" size={16} color="#71a071" />
-          </TouchableOpacity>
-        </ScrollView>
-      </View>
+      )}
+
       <View style={styles.workspace}>
-        <View 
-          style={[StyleSheet.absoluteFill, { opacity: activeTab === 'scene' ? 1 : 0, zIndex: activeTab === 'scene' ? 1 : 0 }]} 
-          pointerEvents={activeTab === 'scene' ? 'auto' : 'none'}
-        >
+        <View style={[StyleSheet.absoluteFill, { opacity: activeTab === 'scene' ? 1 : 0, zIndex: activeTab === 'scene' ? 1 : 0 }]} pointerEvents={activeTab === 'scene' ? 'auto' : 'none'}>
           <HierarchyPanel isVisible={showHierarchy} />
           <CanvasWorkspace />
         </View>
-        <View 
-          style={[StyleSheet.absoluteFill, { opacity: activeTab === 'blueprint' ? 1 : 0, zIndex: activeTab === 'blueprint' ? 1 : 0 }]} 
-          pointerEvents={activeTab === 'blueprint' ? 'auto' : 'none'}
-        >
+        <View style={[StyleSheet.absoluteFill, { opacity: activeTab === 'blueprint' ? 1 : 0, zIndex: activeTab === 'blueprint' ? 1 : 0 }]} pointerEvents={activeTab === 'blueprint' ? 'auto' : 'none'}>
           <BlueprintWorkspace />
         </View>
-        <View 
-          style={[StyleSheet.absoluteFill, { opacity: activeTab === 'global_state' ? 1 : 0, zIndex: activeTab === 'global_state' ? 1 : 0 }]} 
-          pointerEvents={activeTab === 'global_state' ? 'auto' : 'none'}
-        >
+        <View style={[StyleSheet.absoluteFill, { opacity: activeTab === 'global_state' ? 1 : 0, zIndex: activeTab === 'global_state' ? 1 : 0 }]} pointerEvents={activeTab === 'global_state' ? 'auto' : 'none'}>
           <GlobalStatePanel />
         </View>
         {showLibrary && activeTab !== 'global_state' && (
@@ -185,16 +280,25 @@ const styles = StyleSheet.create({
     backgroundColor: '#1d201e',
     paddingTop: 45,
   },
-  header: {
-    height: 60,
+  headerContainer: {
     backgroundColor: 'rgba(30, 30, 30, 0.95)',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.1)',
+    zIndex: 10,
+  },
+  header: {
+    height: 60,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    zIndex: 10,
+  },
+  subHeader: {
+    height: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingBottom: 8,
   },
   backBtn: {
     padding: 8,
@@ -226,13 +330,14 @@ const styles = StyleSheet.create({
   title: {
     color: '#ddbea9',
     fontWeight: '900',
-    fontSize: 16,
-    letterSpacing: 1.2,
+    fontSize: 13,
+    letterSpacing: 1.0,
     flex: 1,
-    marginLeft: 12,
+    marginLeft: 0,
   },
   headerActionsWrapper: {
     marginLeft: 6,
+    maxWidth: 130,
   },
   headerActionsScroll: {
     flexDirection: 'row',
@@ -278,5 +383,74 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.4,
     shadowRadius: 12,
     zIndex: 100,
+  },
+  sceneDropdownBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 12,
+    marginRight: 12,
+    gap: 6,
+    minWidth: 120,
+  },
+  sceneManagerDropdown: {
+    position: 'absolute',
+    top: 95,
+    left: 48,
+    width: 200,
+    backgroundColor: '#1B2130',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    padding: 12,
+    zIndex: 200,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.5,
+    shadowRadius: 15,
+  },
+  sceneManagerTitle: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 10,
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
+  sceneList: {
+    maxHeight: 200,
+    marginBottom: 12,
+  },
+  sceneRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    gap: 8,
+    borderRadius: 6,
+  },
+  sceneRowActive: {
+    backgroundColor: 'rgba(221, 190, 169, 0.1)',
+  },
+  sceneRowText: {
+    color: '#fff',
+    fontSize: 13,
+  },
+  sceneRowTextActive: {
+    color: '#ddbea9',
+    fontWeight: 'bold',
+  },
+  newSceneBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ddbea9',
+    paddingVertical: 10,
+    borderRadius: 8,
+    gap: 6,
+  },
+  newSceneBtnText: {
+    color: '#0F1218',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
 });

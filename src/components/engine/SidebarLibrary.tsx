@@ -33,7 +33,12 @@ const BLUEPRINT_PRIMITIVES: PrimitiveType[] = [
   'get_matrix_cell',
   'get_orthogonal',
   'count_elements',
-  'on_execution_complete'
+  'on_execution_complete',
+  'load_scene',
+  'on_tick',
+  'delay',
+  'set_transform',
+  'destroy_element'
 ];
 
 const getIcon = (type: PrimitiveType) => {
@@ -80,6 +85,16 @@ const getIcon = (type: PrimitiveType) => {
       return <Feather name="layers" size={size} color={color} />;
     case 'on_execution_complete':
       return <Feather name="check-circle" size={size} color={color} />;
+    case 'load_scene':
+      return <Feather name="map" size={size} color={color} />;
+    case 'on_tick':
+      return <Feather name="clock" size={size} color={color} />;
+    case 'delay':
+      return <Feather name="pause-circle" size={size} color={color} />;
+    case 'set_transform':
+      return <Feather name="move" size={size} color={color} />;
+    case 'destroy_element':
+      return <Feather name="trash" size={size} color={color} />;
     default:
       return <Feather name="help-circle" size={size} color={color} />;
   }
@@ -96,11 +111,9 @@ export const SidebarLibrary: React.FC<Props> = ({ mode }) => {
   const [isMinimized, setIsMinimized] = React.useState(false);
 
   const handleAdd = (type: PrimitiveType) => {
-    // 40px grid aligned sizes
     const w = type === 'grid' ? 160 : (type === 'spawner_marker' ? 40 : 80);
     const h = type === 'grid' ? 160 : (type === 'spawner_marker' ? 40 : 80);
 
-    // Compute current screen center in canvas-space
     let currentPanX = mode === 'scene' ? panX.value : bpPanX.value;
     let currentPanY = mode === 'scene' ? panY.value : bpPanY.value;
     let currentScale = mode === 'scene' ? scale.value : bpScale.value;
@@ -116,7 +129,6 @@ export const SidebarLibrary: React.FC<Props> = ({ mode }) => {
       }
     }
 
-    // Magnetically snap the initial spawn location to 40px grid
     x = Math.round(x / 40) * 40;
     y = Math.round(y / 40) * 40;
 
@@ -138,7 +150,6 @@ export const SidebarLibrary: React.FC<Props> = ({ mode }) => {
       panY.value = 0;
       scale.value = 1;
 
-      // Reset spawner marker back to center of screen if present
       setElements((prev) =>
         prev.map((el) => {
           if (el.type === 'spawner_marker') {
@@ -256,7 +267,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'center',
     gap: 12,
-    maxWidth: 270, // Fits 5 on top and 4 on bottom perfectly!
+    maxWidth: 270,
   },
   iconButton: {
     width: 44,

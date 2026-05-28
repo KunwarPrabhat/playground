@@ -40,8 +40,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onOpenProject }) => {
         id: newId,
         name: newProjectName.trim(),
         lastModified: Date.now(),
-        engineData: { elements: [], globalVariables: [] },
-        blueprintData: { nodes: [], wires: [] },
+        globalVariables: [],
+        scenes: [
+          {
+            id: 'scene_' + Math.random().toString(36).substring(2, 9),
+            name: 'Level 1',
+            elements: [],
+            nodes: [],
+            wires: []
+          }
+        ]
       };
       await ProjectManager.saveProject(newProj);
       setIsCreating(false);

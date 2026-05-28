@@ -22,7 +22,12 @@ export type PrimitiveType =
   | 'get_matrix_cell'
   | 'get_orthogonal'
   | 'count_elements'
-  | 'on_execution_complete';
+  | 'on_execution_complete'
+  | 'load_scene'
+  | 'destroy_element'
+  | 'delay'
+  | 'set_transform'
+  | 'on_tick';
 
 export type GridSnap = 'off' | 8 | 16 | 32;
 

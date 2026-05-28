@@ -26,6 +26,8 @@ interface EngineContextType {
   bulkAddElements: (newElements: ElementNode[]) => void;
   loadEngineState: (elements: any[], globals: any[]) => void;
   clearEngineState: () => void;
+  sceneLoadRequest: string | null;
+  setSceneLoadRequest: (name: string | null) => void;
 }
 
 const EngineContext = createContext<EngineContextType | undefined>(undefined);
@@ -36,6 +38,7 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [snapSize, setSnapSize] = useState<GridSnap>(16);
   const [globalVariables, setGlobalVariables] = useState<GlobalVariable[]>([]);
+  const [sceneLoadRequest, setSceneLoadRequest] = useState<string | null>(null);
 
   const panX = useSharedValue(0);
   const panY = useSharedValue(0);
@@ -162,7 +165,9 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         updateElementState,
         bulkAddElements,
         loadEngineState,
-        clearEngineState
+        clearEngineState,
+        sceneLoadRequest,
+        setSceneLoadRequest
       }}
     >
       {children}
